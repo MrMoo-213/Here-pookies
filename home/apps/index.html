@@ -18,6 +18,11 @@
 <div class="spinner"></div>
 </div>
 
+<div class="toast" id="toast">
+<span class="tick">✓</span>
+<span id="toastText">Successfully Requested</span>
+</div>
+
 <div class="dashboard">
 
 <header class="topbar">
@@ -28,23 +33,23 @@ Games
 
 <div class="userArea">
 
-<div class="navMenu" id="navMenu" tabindex="0">
+<div class="navMenu" id="navMenu">
 
-<button class="menuButton" id="homeButton" aria-label="Home">
+<button class="menuButton" id="menuButton" aria-label="Menu">
 ☰
 </button>
 
-<div class="navFly">
+<div class="navItems">
 
-<button class="navBubble navBubble-chat" id="navChat" aria-label="Chat">
+<button class="navItem chat" id="navChat" aria-label="Chat">
 💬
 </button>
 
-<button class="navBubble navBubble-home" id="navHome" aria-label="Home">
+<button class="navItem home" id="navHome" aria-label="Home">
 🏠
 </button>
 
-<button class="navBubble navBubble-comp" id="navComp" aria-label="Competitions">
+<button class="navItem competition" id="navCompetition" aria-label="Competitions">
 🏆
 </button>
 
@@ -57,20 +62,18 @@ Games
 </header>
 
 <main class="apps-grid" id="appsGrid">
-</main>
 
-<p class="emptyState hidden" id="emptyState">
-No games yet.
-</p>
+</main>
 
 </div>
 
 <div class="iconStack">
 
 <button class="iconBtn" id="layoutButton" aria-label="Toggle layout">
-<span class="iosSwitch" id="iosSwitch">
-<span class="iosKnob"></span>
-</span>
+<svg viewBox="0 0 36 20" width="24" height="14">
+<rect x="1" y="1" width="34" height="18" rx="9" fill="none" stroke="currentColor" stroke-width="2"/>
+<circle cx="10" cy="10" r="6" fill="currentColor"/>
+</svg>
 </button>
 
 <button class="iconBtn" id="addButton" aria-label="Add game">
@@ -96,32 +99,23 @@ Logout
 
 </div>
 
-<div class="settingsPanel hidden" id="addGamePanel">
+<div class="settingsPanel hidden" id="addPanel">
 
-<h2>Add Game</h2>
+<h2>New Game</h2>
 
-<label class="fieldLabel" for="gameNameInput">New Game Name:</label>
-<input class="fieldInput" id="gameNameInput" type="text" placeholder="e.g. Geometry Dash" autocomplete="off">
+<label for="gameNameInput">Game Name:</label>
+<input type="text" id="gameNameInput" placeholder="e.g. Chess">
 
-<label class="fieldLabel" for="gameUrlInput">URL:</label>
-<input class="fieldInput" id="gameUrlInput" type="text" placeholder="https://..." autocomplete="off">
+<label for="gameUrlInput">URL:</label>
+<input type="text" id="gameUrlInput" placeholder="https://example.com">
 
-<div class="formActions">
-
-<button class="submitSmall" id="gameSubmitButton">
+<button class="button create small" id="submitGameButton">
 Submit
 </button>
 
 </div>
 
-</div>
-
 <div class="settingsOverlay hidden" id="settingsOverlay"></div>
-
-<div class="toast hidden" id="toast">
-<span class="toastCheck">✓</span>
-<span class="toastText">Successfully Requested</span>
-</div>
 
 <script src="/js/config.js"></script>
 <script src="/js/session.js"></script>
@@ -131,6 +125,60 @@ Submit
 <script src="/js/auth.js"></script>
 
 <script>
+
+function showToast(message){
+
+const toast=document.getElementById("toast");
+document.getElementById("toastText").textContent=message;
+
+toast.classList.add("show");
+
+setTimeout(()=>{
+
+toast.classList.remove("show");
+
+},3000);
+
+}
+
+async function loadGames(){
+
+const grid=document.getElementById("appsGrid");
+grid.innerHTML="";
+
+const result=await Sheets.getGames();
+
+if(!result.success){
+
+return;
+
+}
+
+result.games.forEach(game=>{
+
+const button=document.createElement("button");
+button.className="pill pill-blue";
+button.textContent=game.name;
+
+button.addEventListener("click",()=>{
+
+if(game.internal){
+
+window.location.href="/"+game.url.replace(/^\/+/,"");
+
+}else{
+
+window.open(game.url,"_blank");
+
+}
+
+});
+
+grid.appendChild(button);
+
+});
+
+}
 
 window.addEventListener("load",async()=>{
 
@@ -155,60 +203,6 @@ loading.classList.add("hidden");
 
 });
 
-async function loadGames(){
-
-const grid=document.getElementById("appsGrid");
-const emptyState=document.getElementById("emptyState");
-
-grid.innerHTML="";
-
-const result=await Sheets.getGames();
-
-if(!result.success||!result.games||result.games.length===0){
-
-emptyState.classList.remove("hidden");
-
-return;
-
-}
-
-emptyState.classList.add("hidden");
-
-result.games.forEach(game=>{
-
-const button=document.createElement("button");
-
-button.className="pill pill-blue";
-button.textContent=game.name;
-
-button.addEventListener("click",()=>{
-
-if(game.internal){
-
-const path=game.url.startsWith("/")?game.url:"/"+game.url;
-
-window.location.href=path;
-
-}else{
-
-window.open(game.url,"_blank","noopener");
-
-}
-
-});
-
-grid.appendChild(button);
-
-});
-
-}
-
-document.getElementById("homeButton").addEventListener("click",()=>{
-
-window.location.href=CONFIG.ROUTES.HOME;
-
-});
-
 document.getElementById("navHome").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.HOME;
@@ -221,18 +215,31 @@ window.location.href=CONFIG.ROUTES.CHAT;
 
 });
 
-document.getElementById("navComp").addEventListener("click",()=>{
+document.getElementById("navCompetition").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.COMPETITIONS;
 
 });
 
-const iosSwitch=document.getElementById("iosSwitch");
+const navMenu=document.getElementById("navMenu");
+const menuButton=document.getElementById("menuButton");
+
+menuButton.addEventListener("click",(e)=>{
+
+e.stopPropagation();
+navMenu.classList.toggle("open");
+
+});
+
+document.addEventListener("click",()=>{
+
+navMenu.classList.remove("open");
+
+});
 
 document.getElementById("layoutButton").addEventListener("click",()=>{
 
 document.getElementById("appsGrid").classList.toggle("list-view");
-iosSwitch.classList.toggle("on");
 
 });
 
@@ -243,105 +250,55 @@ Auth.logout();
 });
 
 const gearButton=document.getElementById("gearButton");
-const addButton=document.getElementById("addButton");
 const settingsPanel=document.getElementById("settingsPanel");
-const addGamePanel=document.getElementById("addGamePanel");
+const addPanel=document.getElementById("addPanel");
 const settingsOverlay=document.getElementById("settingsOverlay");
-
-function closeAllPanels(){
-
-settingsPanel.classList.add("hidden");
-addGamePanel.classList.add("hidden");
-settingsOverlay.classList.add("hidden");
-
-}
 
 function toggleSettings(){
 
-const wasHidden=settingsPanel.classList.contains("hidden");
-
-closeAllPanels();
-
-if(wasHidden){
-
-settingsPanel.classList.remove("hidden");
-settingsOverlay.classList.remove("hidden");
+settingsPanel.classList.toggle("hidden");
+settingsOverlay.classList.toggle("hidden");
 
 }
 
-}
+function toggleAddPanel(){
 
-function toggleAddGame(){
-
-const wasHidden=addGamePanel.classList.contains("hidden");
-
-closeAllPanels();
-
-if(wasHidden){
-
-addGamePanel.classList.remove("hidden");
-settingsOverlay.classList.remove("hidden");
-
-}
+addPanel.classList.toggle("hidden");
+settingsOverlay.classList.toggle("hidden");
 
 }
 
 gearButton.addEventListener("click",toggleSettings);
-addButton.addEventListener("click",toggleAddGame);
-settingsOverlay.addEventListener("click",closeAllPanels);
 
-const gameNameInput=document.getElementById("gameNameInput");
-const gameUrlInput=document.getElementById("gameUrlInput");
-const gameSubmitButton=document.getElementById("gameSubmitButton");
-const toast=document.getElementById("toast");
+document.getElementById("addButton").addEventListener("click",toggleAddPanel);
 
-let toastTimer=null;
+settingsOverlay.addEventListener("click",()=>{
 
-function showToast(){
-
-clearTimeout(toastTimer);
-
-toast.classList.remove("hidden");
-
-requestAnimationFrame(()=>{
-
-toast.classList.add("show");
+settingsPanel.classList.add("hidden");
+addPanel.classList.add("hidden");
+settingsOverlay.classList.add("hidden");
 
 });
 
-toastTimer=setTimeout(()=>{
+document.getElementById("submitGameButton").addEventListener("click",async()=>{
 
-toast.classList.remove("show");
+const nameInput=document.getElementById("gameNameInput");
+const urlInput=document.getElementById("gameUrlInput");
 
-setTimeout(()=>{
-
-toast.classList.add("hidden");
-
-},250);
-
-},3000);
-
-}
-
-gameSubmitButton.addEventListener("click",async()=>{
-
-const name=gameNameInput.value.trim();
-const url=gameUrlInput.value.trim();
+const name=nameInput.value.trim();
+const url=urlInput.value.trim();
 
 if(!name||!url)return;
 
-gameSubmitButton.disabled=true;
+await Sheets.requestGame(name,url);
 
-await Sheets.submitGameRequest(name,url);
+nameInput.value="";
+urlInput.value="";
 
-gameNameInput.value="";
-gameUrlInput.value="";
+addPanel.classList.add("hidden");
+settingsOverlay.classList.add("hidden");
 
-gameSubmitButton.disabled=false;
-
-closeAllPanels();
-
-showToast();
+showToast("Successfully Requested");
 
 });
 
