@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>Page Not Found</title>
+
+<link rel="stylesheet" href="/css/animations.css">
+<link rel="stylesheet" href="/css/style.css">
+
+</head>
+<body>
+
+<div class="page">
+
+<div class="card">
+
+<h1 class="logo float">
+404
+</h1>
+
+<p class="subtitle">
+This page doesn't exist.
+</p>
+
+<button
+class="button guest hover-lift"
+id="homeButton">
+Go Home
+</button>
+
+</div>
+
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/session.js"></script>
+
+<script>
+
+document.getElementById("homeButton").addEventListener("click",()=>{
+
+const hasSession=SessionManager.hasSession();
+
+window.location.href=hasSession?CONFIG.ROUTES.HOME:CONFIG.ROUTES.LOGIN;
+
+});
+
+</script>
+
+</body>
+</html>
