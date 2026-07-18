@@ -68,6 +68,23 @@ text-align:center;
 }
 
 .button{
+width:320px;
+height:54px;
+border-radius:999px;
+font-size:18px;
+font-weight:600;
+cursor:pointer;
+transition:
+transform .15s,
+background .2s,
+box-shadow .2s,
+opacity .2s;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.logOutButton{
 width:120px;
 height:54px;
 border-radius:999px;
