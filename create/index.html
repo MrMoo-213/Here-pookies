@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<title>Request An Account</title>
+<title>Create Account</title>
 
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
@@ -23,40 +23,33 @@
 
 <div class="card">
 
-<h1 class="logo float">
+<h1 class="logo">
 Here pookies 😘💕
 </h1>
 
-<h2 class="requestTitle">
-Request An Account
-</h2>
+<p class="subtitle">
+<u>Request An Account</u>
+</p>
 
-<div class="requestBox">
+<div class="requestCard" id="stageWarning">
 
-<div class="requestScreen" id="screenIntro">
-
-<p class="requestText">
+<p>
 Do you know any of the admins?<br>
 If so ask them, don't fill this out.
 </p>
 
 </div>
 
-<div class="requestScreen hidden" id="screenForm">
+<div class="requestCard hidden" id="stageForm">
 
-<p class="requestLabel">
-Log in with your school account:
-</p>
+<p>Log in with your school account:</p>
 
-<div id="googleButton" class="hover-scale"></div>
+<div id="googleButton"></div>
 
-<p class="requestLabel requestLabel-spaced">
-Choose a username:
-</p>
+<label for="usernameInput">Choose a username:</label>
+<input type="text" id="usernameInput" placeholder="Enter Here">
 
-<input class="requestInput" id="usernameInput" type="text" placeholder="Enter Here" autocomplete="off">
-
-<button class="button create hover-lift requestSubmit" id="submitRequestButton">
+<button class="button create small" id="submitRequestButton">
 Submit
 </button>
 
@@ -64,19 +57,23 @@ Submit
 
 </div>
 
-<div class="requestScreen hidden" id="screenDone">
+<div class="requestCard hidden" id="stageDone">
 
-<p class="requestText">
+<p>
 The admins will review your request within a week.
 </p>
 
-<button class="button create hover-lift" id="backToLoginButton">
+<button class="button create small" id="backToLoginButton">
 Back to Login
 </button>
 
 </div>
 
-</div>
+<button
+class="button guest"
+onclick="window.location.href=CONFIG.ROUTES.LOGIN">
+Back
+</button>
 
 </div>
 
@@ -86,91 +83,88 @@ Back to Login
 <script src="/js/session.js"></script>
 <script src="/js/logger.js"></script>
 <script src="/js/sheets.js"></script>
-<script src="/js/auth.js"></script>
 
 <script>
 
-let googleCredential=null;
+let pendingIdToken=null;
 
 google.accounts.id.initialize({
 client_id:CONFIG.CLIENT_ID,
-callback:response=>{
-
-googleCredential=response.credential;
-
-}
+callback:handleGoogleSignIn
 });
 
 google.accounts.id.renderButton(
 document.getElementById("googleButton"),
 {
-theme:"filled_blue",
+theme:"outline",
 size:"large",
 shape:"pill",
 text:"signin_with",
-width:260
+width:280
 }
 );
 
-setTimeout(()=>{
+function handleGoogleSignIn(response){
 
-document.getElementById("screenIntro").classList.add("hidden");
-document.getElementById("screenForm").classList.remove("hidden");
+pendingIdToken=response.credential;
 
-},2000);
+}
 
 document.getElementById("submitRequestButton").addEventListener("click",async()=>{
 
 const errorBox=document.getElementById("error");
+const usernameInput=document.getElementById("usernameInput");
+const username=usernameInput.value.trim();
 
 errorBox.textContent="";
-errorBox.classList.remove("show");
 
-if(!googleCredential){
+if(!pendingIdToken){
 
-errorBox.textContent="Please sign in with your school Google account first.";
-errorBox.classList.add("show");
-
+errorBox.textContent="Please sign in with Google first.";
 return;
 
 }
 
-const username=document.getElementById("usernameInput").value.trim();
-
 if(!username){
 
 errorBox.textContent="Please choose a username.";
-errorBox.classList.add("show");
-
 return;
 
 }
 
 const loading=document.getElementById("loading");
-
 loading.classList.remove("hidden");
 
-const result=await Sheets.requestAccount(googleCredential,username);
+const result=await Sheets.requestAccount(pendingIdToken,username);
 
 loading.classList.add("hidden");
 
-if(result.success){
+if(!result.success){
 
-document.getElementById("screenForm").classList.add("hidden");
-document.getElementById("screenDone").classList.remove("hidden");
-
-}else{
-
-errorBox.textContent=result.message||"Something went wrong.";
-errorBox.classList.add("show");
+errorBox.textContent=result.message||"Unable to submit request.";
+return;
 
 }
+
+document.getElementById("stageForm").classList.add("hidden");
+document.getElementById("stageDone").classList.remove("hidden");
 
 });
 
 document.getElementById("backToLoginButton").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.LOGIN;
+
+});
+
+window.addEventListener("load",()=>{
+
+setTimeout(()=>{
+
+document.getElementById("stageWarning").classList.add("hidden");
+document.getElementById("stageForm").classList.remove("hidden");
+
+},2000);
 
 });
 
