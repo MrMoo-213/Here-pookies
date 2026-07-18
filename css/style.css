@@ -176,6 +176,98 @@ transform:rotate(360deg);
 animation:FadeIn .3s ease;
 }
 
+.toast{
+position:fixed;
+top:24px;
+left:50%;
+transform:translateX(-50%) translateY(-14px);
+background:#151515;
+border:1px solid #242424;
+border-radius:999px;
+padding:8px 18px 8px 8px;
+display:flex;
+align-items:center;
+gap:10px;
+font-size:14px;
+font-weight:600;
+opacity:0;
+pointer-events:none;
+transition:opacity .25s,transform .25s;
+z-index:9999;
+}
+
+.toast.show{
+opacity:1;
+transform:translateX(-50%) translateY(0);
+}
+
+.toast .tick{
+width:22px;
+height:22px;
+border-radius:50%;
+background:#28b44b;
+color:#000;
+font-size:13px;
+font-weight:900;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
+.requestCard{
+width:480px;
+max-width:88vw;
+min-height:360px;
+background:#1a1a1a;
+border-radius:28px;
+padding:36px;
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:center;
+gap:16px;
+text-align:center;
+animation:SlideUp .35s ease;
+}
+
+.requestCard.hidden{
+display:none;
+}
+
+.requestCard p{
+font-size:18px;
+line-height:1.6;
+color:#eee;
+}
+
+.requestCard label{
+font-size:15px;
+color:#ccc;
+align-self:flex-start;
+margin-top:8px;
+}
+
+.requestCard input{
+width:100%;
+height:48px;
+border-radius:14px;
+background:#252525;
+border:1px solid #303030;
+color:#fff;
+padding:0 16px;
+font-size:15px;
+}
+
+.requestCard input:focus{
+border-color:#444;
+}
+
+.requestCard #googleButton{
+width:100%;
+display:flex;
+justify-content:center;
+}
+
 ::selection{
 background:#ffffff33;
 }
@@ -195,93 +287,4 @@ border-radius:999px;
 
 ::-webkit-scrollbar-thumb:hover{
 background:#666;
-}
-
-/* ---------- Request-account flow ---------- */
-
-.requestTitle{
-font-size:18px;
-font-weight:600;
-text-decoration:underline;
-margin-top:-14px;
-margin-bottom:6px;
-text-align:center;
-}
-
-.requestBox{
-width:380px;
-max-width:88vw;
-background:#232323;
-border-radius:32px;
-padding:38px 34px;
-display:flex;
-flex-direction:column;
-align-items:center;
-gap:16px;
-animation:ScaleIn .35s ease;
-}
-
-.requestScreen{
-width:100%;
-display:flex;
-flex-direction:column;
-align-items:center;
-gap:14px;
-animation:FadeIn .3s ease;
-}
-
-.requestText{
-font-size:17px;
-line-height:1.6;
-text-align:center;
-color:#eee;
-}
-
-.requestLabel{
-font-size:15px;
-color:#ccc;
-align-self:flex-start;
-}
-
-.requestLabel-spaced{
-margin-top:10px;
-}
-
-.requestInput{
-width:100%;
-height:48px;
-border-radius:999px;
-background:#1c1c1c;
-border:1px solid #2e2e2e;
-color:#fff;
-padding:0 20px;
-font-size:15px;
-text-align:center;
-transition:border-color .2s;
-}
-
-.requestInput:focus{
-border-color:#28b44b;
-}
-
-.requestSubmit{
-width:100%;
-margin-top:8px;
-}
-
-/* ---------- Standalone coming-soon page (no dashboard/topbar) ---------- */
-
-.comingSoonPage{
-position:fixed;
-inset:0;
-display:flex;
-align-items:flex-start;
-justify-content:flex-start;
-padding:40px;
-}
-
-.comingSoonText{
-font-size:32px;
-font-weight:800;
-color:#fff;
 }
