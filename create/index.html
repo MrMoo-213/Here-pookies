@@ -15,6 +15,10 @@
 </head>
 <body>
 
+<div class="loading hidden" id="loading">
+<div class="spinner"></div>
+</div>
+
 <div class="page">
 
 <div class="card">
@@ -69,9 +73,19 @@ width:320
 
 async function handleRequest(response){
 
+const loading=document.getElementById("loading");
+
+if(loading){
+loading.classList.remove("hidden");
+}
+
 document.getElementById("status").textContent="Submitting request...";
 
 const result=await Sheets.requestAccount(response.credential);
+
+if(loading){
+loading.classList.add("hidden");
+}
 
 if(result.success){
 
