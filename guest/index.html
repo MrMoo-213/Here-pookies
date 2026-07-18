@@ -1,1 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>Guest</title>
+
+<link rel="stylesheet" href="/css/animations.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/home.css">
+
+</head>
+<body>
+
+<div class="dashboard">
+
+<header class="topbar">
+
+<div class="title">
+Guest Mode
+</div>
+
+<div class="userArea">
+
+<button
+class="button guest"
+onclick="window.location.href=CONFIG.ROUTES.LOGIN">
+Sign In
+</button>
+
+</div>
+
+</header>
+
+<main class="content">
+
+<div class="panel">
+
+<h2>Welcome</h2>
+
+<p>
+You are currently using Guest Mode.
+</p>
+
+<p>
+Guest users have no account, no session and cannot access protected pages.
+</p>
+
+</div>
+
+<div class="panel">
+
+<h2>Permissions</h2>
+
+<p>✔ View guest content.</p>
+<p>✖ Access /home.</p>
+<p>✖ Access user data.</p>
+<p>✖ Access admin pages.</p>
+<p>✖ Create logs.</p>
+
+</div>
+
+</main>
+
+</div>
+
+<script src="/js/config.js"></script>
+
+<script>
+
+localStorage.removeItem(CONFIG.SESSION.TOKEN_NAME);
+localStorage.removeItem("session_expires");
+
+if(window.history.replaceState){
+window.history.replaceState({},document.title,CONFIG.ROUTES.GUEST);
+}
+
+</script>
+
+</body>
+</html>
