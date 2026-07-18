@@ -11,8 +11,9 @@ LOGIN: "/",
 HOME: "/home",
 GUEST: "/guest",
 CREATE: "/create",
-CHAT: "/home/chat",
-COMPETITIONS: "/home/competitions"
+APPS: "/home/apps",
+COMPETITIONS: "/home/competitions",
+CHAT: "/home/chat"
 }),
 
 ROLES: Object.freeze({
