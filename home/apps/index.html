@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<title>Games</title>
+<title>Apps</title>
 
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
@@ -23,20 +23,20 @@
 <header class="topbar">
 
 <div class="title">
-Games
+Apps
 </div>
 
 <div class="userArea">
 
-<button class="button guest" id="backButton">
-Back
+<button class="menuButton" id="homeButton" aria-label="Home">
+☰
 </button>
 
 </div>
 
 </header>
 
-<main class="home-main">
+<main class="apps-grid" id="appsGrid">
 
 <button class="pill pill-blue" id="geometryDashButton">
 Geometry Dash
@@ -53,6 +53,37 @@ Merge Fruits
 </main>
 
 </div>
+
+<div class="iconStack">
+
+<button class="iconBtn" id="layoutButton" aria-label="Toggle layout">
+📖
+</button>
+
+<button class="iconBtn" id="addButton" aria-label="Add app">
+＋
+</button>
+
+<button class="iconBtn" id="gearButton" aria-label="Settings">
+⚙
+</button>
+
+</div>
+
+<div class="settingsPanel hidden" id="settingsPanel">
+
+<h2>Account</h2>
+
+<p><strong>Email:</strong> <span id="email">Loading...</span></p>
+<p><strong>Role:</strong> <span id="role">Loading...</span></p>
+
+<button class="button guest" id="logoutButton">
+Logout
+</button>
+
+</div>
+
+<div class="settingsOverlay hidden" id="settingsOverlay"></div>
 
 <script src="/js/config.js"></script>
 <script src="/js/session.js"></script>
@@ -71,11 +102,20 @@ const allowed=await Security.protect();
 
 if(!allowed)return;
 
+const user=await Security.getUser();
+
+if(user){
+
+document.getElementById("email").textContent=user.email;
+document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
+
+}
+
 loading.classList.add("hidden");
 
 });
 
-document.getElementById("backButton").addEventListener("click",()=>{
+document.getElementById("homeButton").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.HOME;
 
@@ -98,6 +138,38 @@ document.getElementById("mergeFruitsButton").addEventListener("click",()=>{
 window.location.href="/home/apps/merge-fruits";
 
 });
+
+document.getElementById("addButton").addEventListener("click",()=>{
+
+alert("Adding new apps is coming soon.");
+
+});
+
+document.getElementById("layoutButton").addEventListener("click",()=>{
+
+document.getElementById("appsGrid").classList.toggle("list-view");
+
+});
+
+document.getElementById("logoutButton").addEventListener("click",()=>{
+
+Auth.logout();
+
+});
+
+const gearButton=document.getElementById("gearButton");
+const settingsPanel=document.getElementById("settingsPanel");
+const settingsOverlay=document.getElementById("settingsOverlay");
+
+function toggleSettings(){
+
+settingsPanel.classList.toggle("hidden");
+settingsOverlay.classList.toggle("hidden");
+
+}
+
+gearButton.addEventListener("click",toggleSettings);
+settingsOverlay.addEventListener("click",toggleSettings);
 
 </script>
 
