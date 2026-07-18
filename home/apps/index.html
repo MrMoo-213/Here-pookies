@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<title>Home</title>
+<title>Games</title>
 
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
@@ -23,15 +23,14 @@
 <header class="topbar">
 
 <div class="title">
-Here pookies 😘💕
+Games
 </div>
 
 <div class="userArea">
 
-<div class="welcome">
-Welcome,
-<span id="username">Loading...</span>
-</div>
+<button class="button guest" id="backButton">
+Back
+</button>
 
 </div>
 
@@ -39,40 +38,21 @@ Welcome,
 
 <main class="home-main">
 
-<button class="pill pill-green" id="competitionsButton">
-Competitions
+<button class="pill pill-yellow" id="geometryDashButton">
+Geometry Dash
 </button>
 
-<button class="pill pill-yellow" id="appsButton">
-Apps
+<button class="pill pill-green" id="mergeFellasButton">
+Merge Fellas
 </button>
 
-<button class="pill pill-blue" id="chatButton">
-Chat
+<button class="pill pill-blue" id="mergeFruitsButton">
+Merge Fruits
 </button>
 
 </main>
 
 </div>
-
-<button class="gearButton" id="gearButton" aria-label="Settings">
-⚙
-</button>
-
-<div class="settingsPanel hidden" id="settingsPanel">
-
-<h2>Account</h2>
-
-<p><strong>Email:</strong> <span id="email">Loading...</span></p>
-<p><strong>Role:</strong> <span id="role">Loading...</span></p>
-
-<button class="button guest" id="logoutButton">
-Logout
-</button>
-
-</div>
-
-<div class="settingsOverlay hidden" id="settingsOverlay"></div>
 
 <script src="/js/config.js"></script>
 <script src="/js/session.js"></script>
@@ -91,55 +71,33 @@ const allowed=await Security.protect();
 
 if(!allowed)return;
 
-const user=await Security.getUser();
-
-if(!user)return;
-
-document.getElementById("username").textContent=user.username;
-document.getElementById("email").textContent=user.email;
-document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
-
 loading.classList.add("hidden");
 
 });
 
-document.getElementById("logoutButton").addEventListener("click",()=>{
+document.getElementById("backButton").addEventListener("click",()=>{
 
-Auth.logout();
-
-});
-
-document.getElementById("competitionsButton").addEventListener("click",()=>{
-
-alert("Competitions is coming soon.");
+window.location.href=CONFIG.ROUTES.HOME;
 
 });
 
-document.getElementById("appsButton").addEventListener("click",()=>{
+document.getElementById("geometryDashButton").addEventListener("click",()=>{
 
-window.location.href="/home/apps";
-
-});
-
-document.getElementById("chatButton").addEventListener("click",()=>{
-
-alert("Chat is coming soon.");
+window.location.href="/home/files/geometry-dash.html";
 
 });
 
-const gearButton=document.getElementById("gearButton");
-const settingsPanel=document.getElementById("settingsPanel");
-const settingsOverlay=document.getElementById("settingsOverlay");
+document.getElementById("mergeFellasButton").addEventListener("click",()=>{
 
-function toggleSettings(){
+window.location.href="/home/files/merge-fellas.html";
 
-settingsPanel.classList.toggle("hidden");
-settingsOverlay.classList.toggle("hidden");
+});
 
-}
+document.getElementById("mergeFruitsButton").addEventListener("click",()=>{
 
-gearButton.addEventListener("click",toggleSettings);
-settingsOverlay.addEventListener("click",toggleSettings);
+window.location.href="/home/files/merge-fruits.html";
+
+});
 
 </script>
 
