@@ -14,21 +14,57 @@
 </head>
 <body>
 
-<div class="loading" id="loading">
+<div class="loading hidden" id="loading">
 <div class="spinner"></div>
 </div>
 
-<div class="comingSoonPage">
+<div class="dashboard">
 
-<h1 class="comingSoonText fade-in">
+<header class="topbar">
+
+<div class="title">
+Competitions
+</div>
+
+<div class="userArea">
+
+<div class="navMenu" id="navMenu">
+
+<button class="menuButton" id="menuButton" aria-label="Menu">
+☰
+</button>
+
+<div class="navItems">
+
+<button class="navItem chat" id="navChat" aria-label="Chat">
+💬
+</button>
+
+<button class="navItem home" id="navHome" aria-label="Home">
+🏠
+</button>
+
+<button class="navItem competition" id="navCompetition" aria-label="Competitions">
+🏆
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+</header>
+
+<div class="comingSoon">
+
+<h1>
 Coming Soon...
 </h1>
 
 </div>
 
-<button class="menuButton comingSoonHome" id="homeButton" aria-label="Home">
-☰
-</button>
+</div>
 
 <script src="/js/config.js"></script>
 <script src="/js/session.js"></script>
@@ -51,9 +87,37 @@ loading.classList.add("hidden");
 
 });
 
-document.getElementById("homeButton").addEventListener("click",()=>{
+document.getElementById("navHome").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.HOME;
+
+});
+
+document.getElementById("navChat").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.CHAT;
+
+});
+
+document.getElementById("navCompetition").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.COMPETITIONS;
+
+});
+
+const navMenu=document.getElementById("navMenu");
+const menuButton=document.getElementById("menuButton");
+
+menuButton.addEventListener("click",(e)=>{
+
+e.stopPropagation();
+navMenu.classList.toggle("open");
+
+});
+
+document.addEventListener("click",()=>{
+
+navMenu.classList.remove("open");
 
 });
 
