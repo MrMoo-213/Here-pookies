@@ -98,9 +98,9 @@ return await this.request("getGames");
 
 }
 
-static async submitGameRequest(name,url){
+static async requestGame(name,url){
 
-return await this.request("submitGameRequest",{
+return await this.request("requestGame",{
 name,
 url
 });
