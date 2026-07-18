@@ -1,1 +1,176 @@
+/* css/animations.css */
 
+:root{
+--transition-fast:.15s;
+--transition:.25s;
+--transition-slow:.4s;
+--scale-hover:1.03;
+--scale-click:.98;
+--shadow:0 10px 30px rgba(0,0,0,.25);
+}
+
+@keyframes FadeIn{
+from{
+opacity:0;
+}
+to{
+opacity:1;
+}
+}
+
+@keyframes FadeOut{
+from{
+opacity:1;
+}
+to{
+opacity:0;
+}
+}
+
+@keyframes SlideUp{
+from{
+opacity:0;
+transform:translateY(30px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+
+@keyframes SlideDown{
+from{
+opacity:0;
+transform:translateY(-30px);
+}
+to{
+opacity:1;
+transform:translateY(0);
+}
+}
+
+@keyframes ScaleIn{
+from{
+opacity:0;
+transform:scale(.94);
+}
+to{
+opacity:1;
+transform:scale(1);
+}
+}
+
+@keyframes Pop{
+0%{
+transform:scale(1);
+}
+50%{
+transform:scale(1.05);
+}
+100%{
+transform:scale(1);
+}
+}
+
+@keyframes Float{
+0%{
+transform:translateY(0);
+}
+50%{
+transform:translateY(-3px);
+}
+100%{
+transform:translateY(0);
+}
+}
+
+@keyframes Shake{
+0%{
+transform:translateX(0);
+}
+20%{
+transform:translateX(-6px);
+}
+40%{
+transform:translateX(6px);
+}
+60%{
+transform:translateX(-4px);
+}
+80%{
+transform:translateX(4px);
+}
+100%{
+transform:translateX(0);
+}
+}
+
+.fade-in{
+animation:FadeIn .3s ease forwards;
+}
+
+.fade-out{
+animation:FadeOut .2s ease forwards;
+}
+
+.slide-up{
+animation:SlideUp .4s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+.slide-down{
+animation:SlideDown .4s cubic-bezier(.22,1,.36,1) forwards;
+}
+
+.scale-in{
+animation:ScaleIn .3s ease forwards;
+}
+
+.pop{
+animation:Pop .25s ease;
+}
+
+.float{
+animation:Float 2s ease-in-out infinite;
+}
+
+.shake{
+animation:Shake .35s ease;
+}
+
+.hover-lift{
+transition:
+transform var(--transition),
+box-shadow var(--transition);
+}
+
+.hover-lift:hover{
+transform:translateY(-4px);
+box-shadow:var(--shadow);
+}
+
+.hover-scale{
+transition:transform var(--transition-fast);
+}
+
+.hover-scale:hover{
+transform:scale(var(--scale-hover));
+}
+
+.hover-scale:active{
+transform:scale(var(--scale-click));
+}
+
+.page-transition{
+transition:
+opacity .2s ease,
+transform .2s ease;
+}
+
+.hidden{
+display:none!important;
+}
+
+.invisible{
+opacity:0;
+pointer-events:none;
+}
