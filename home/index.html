@@ -1,1 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
 
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>Home</title>
+
+<link rel="stylesheet" href="/css/animations.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/home.css">
+
+</head>
+<body>
+
+<div class="loading hidden" id="loading">
+<div class="spinner"></div>
+</div>
+
+<div class="dashboard">
+
+<header class="topbar">
+
+<div class="title">
+Home
+</div>
+
+<div class="userArea">
+
+<div class="welcome">
+Welcome,
+<span id="username">Loading...</span>
+</div>
+
+<button
+class="button guest"
+id="logoutButton">
+Logout
+</button>
+
+</div>
+
+</header>
+
+<main class="content">
+
+<div class="panel">
+
+<h2>Dashboard</h2>
+
+<p>
+This is the protected home page.
+</p>
+
+</div>
+
+<div class="panel">
+
+<h2>Account</h2>
+
+<p><strong>Email:</strong> <span id="email">Loading...</span></p>
+<p><strong>Role:</strong> <span id="role">Loading...</span></p>
+
+</div>
+
+</main>
+
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/session.js"></script>
+<script src="/js/logger.js"></script>
+<script src="/js/sheets.js"></script>
+<script src="/js/security.js"></script>
+<script src="/js/auth.js"></script>
+
+<script>
+
+window.addEventListener("load",async()=>{
+
+const loading=document.getElementById("loading");
+
+const allowed=await Security.protect();
+
+if(!allowed)return;
+
+const user=await Security.getUser();
+
+if(!user)return;
+
+document.getElementById("username").textContent=user.username;
+document.getElementById("email").textContent=user.email;
+document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
+
+loading.classList.add("hidden");
+
+});
+
+document.getElementById("logoutButton").addEventListener("click",()=>{
+
+Auth.logout();
+
+});
+
+</script>
+
+</body>
+</html>
