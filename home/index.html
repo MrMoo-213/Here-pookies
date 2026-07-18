@@ -37,33 +37,42 @@ Welcome,
 
 </header>
 
-<main class="content">
+<main class="home-main">
 
-<div class="panel">
+<button class="pill pill-green" id="competitionsButton">
+Competitions
+</button>
 
-<p>
-Coming Soon...
-</p>
+<button class="pill pill-yellow" id="gamesButton">
+Games
+</button>
+
+<button class="pill pill-blue" id="chatButton">
+Chat
+</button>
+
+</main>
 
 </div>
 
-<div class="panel">
+<button class="gearButton" id="gearButton" aria-label="Settings">
+⚙
+</button>
+
+<div class="settingsPanel hidden" id="settingsPanel">
 
 <h2>Account</h2>
 
 <p><strong>Email:</strong> <span id="email">Loading...</span></p>
 <p><strong>Role:</strong> <span id="role">Loading...</span></p>
-<Button
-class="button guest"
-id="logoutButton">
 
+<button class="button guest" id="logoutButton">
 Logout
-</Button>
-</div>
-
-</main>
+</button>
 
 </div>
+
+<div class="settingsOverlay hidden" id="settingsOverlay"></div>
 
 <script src="/js/config.js"></script>
 <script src="/js/session.js"></script>
@@ -99,6 +108,38 @@ document.getElementById("logoutButton").addEventListener("click",()=>{
 Auth.logout();
 
 });
+
+document.getElementById("competitionsButton").addEventListener("click",()=>{
+
+alert("Competitions is coming soon.");
+
+});
+
+document.getElementById("gamesButton").addEventListener("click",()=>{
+
+window.location.href="/home/games";
+
+});
+
+document.getElementById("chatButton").addEventListener("click",()=>{
+
+alert("Chat is coming soon.");
+
+});
+
+const gearButton=document.getElementById("gearButton");
+const settingsPanel=document.getElementById("settingsPanel");
+const settingsOverlay=document.getElementById("settingsOverlay");
+
+function toggleSettings(){
+
+settingsPanel.classList.toggle("hidden");
+settingsOverlay.classList.toggle("hidden");
+
+}
+
+gearButton.addEventListener("click",toggleSettings);
+settingsOverlay.addEventListener("click",toggleSettings);
 
 </script>
 
