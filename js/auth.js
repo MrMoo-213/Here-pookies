@@ -29,11 +29,21 @@ logo_alignment:"left"
 
 static async googleCallback(response){
 
+const loading=document.getElementById("loading");
+
+if(loading){
+loading.classList.remove("hidden");
+}
+
 try{
 
 const result=await Sheets.login(response.credential);
 
 if(!result.success){
+
+if(loading){
+loading.classList.add("hidden");
+}
 
 this.showError(result.message||CONFIG.ERRORS.ACCOUNT_NOT_FOUND);
 
@@ -48,6 +58,10 @@ await Logger.login();
 window.location.replace(CONFIG.ROUTES.HOME);
 
 }catch{
+
+if(loading){
+loading.classList.add("hidden");
+}
 
 this.showError("Unable to sign in.");
 
