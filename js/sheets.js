@@ -92,4 +92,19 @@ return await this.request("heartbeat");
 
 }
 
+static async getGames(){
+
+return await this.request("getGames");
+
+}
+
+static async submitGameRequest(name,url){
+
+return await this.request("submitGameRequest",{
+name,
+url
+});
+
+}
+
 }

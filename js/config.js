@@ -10,7 +10,9 @@ ROUTES: Object.freeze({
 LOGIN: "/",
 HOME: "/home",
 GUEST: "/guest",
-CREATE: "/create"
+CREATE: "/create",
+CHAT: "/home/chat",
+COMPETITIONS: "/home/competitions"
 }),
 
 ROLES: Object.freeze({

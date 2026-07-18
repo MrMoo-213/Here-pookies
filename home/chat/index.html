@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+<title>Chat</title>
+
+<link rel="stylesheet" href="/css/animations.css">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/home.css">
+
+</head>
+<body>
+
+<div class="loading" id="loading">
+<div class="spinner"></div>
+</div>
+
+<div class="comingSoonPage">
+
+<h1 class="comingSoonText fade-in">
+Coming Soon...
+</h1>
+
+</div>
+
+<button class="menuButton comingSoonHome" id="homeButton" aria-label="Home">
+☰
+</button>
+
+<script src="/js/config.js"></script>
+<script src="/js/session.js"></script>
+<script src="/js/logger.js"></script>
+<script src="/js/sheets.js"></script>
+<script src="/js/security.js"></script>
+<script src="/js/auth.js"></script>
+
+<script>
+
+window.addEventListener("load",async()=>{
+
+const loading=document.getElementById("loading");
+
+const allowed=await Security.protect();
+
+if(!allowed)return;
+
+loading.classList.add("hidden");
+
+});
+
+document.getElementById("homeButton").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.HOME;
+
+});
+
+</script>
+
+</body>
+</html>

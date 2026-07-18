@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<title>Create Account</title>
+<title>Request An Account</title>
 
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
@@ -23,25 +23,60 @@
 
 <div class="card">
 
-<h1 class="logo">
-Create an Account
+<h1 class="logo float">
+Here pookies 😘💕
 </h1>
 
-<p class="subtitle">
-Sign in with your school Google account to request access.
+<h2 class="requestTitle">
+Request An Account
+</h2>
+
+<div class="requestBox">
+
+<div class="requestScreen" id="screenIntro">
+
+<p class="requestText">
+Do you know any of the admins?<br>
+If so ask them, don't fill this out.
 </p>
 
-<div id="googleButton"></div>
+</div>
 
-<button
-class="button guest"
-onclick="window.location.href=CONFIG.ROUTES.LOGIN">
-Back
+<div class="requestScreen hidden" id="screenForm">
+
+<p class="requestLabel">
+Log in with your school account:
+</p>
+
+<div id="googleButton" class="hover-scale"></div>
+
+<p class="requestLabel requestLabel-spaced">
+Choose a username:
+</p>
+
+<input class="requestInput" id="usernameInput" type="text" placeholder="Enter Here" autocomplete="off">
+
+<button class="button create hover-lift requestSubmit" id="submitRequestButton">
+Submit
 </button>
 
-<div id="status"></div>
-
 <div id="error"></div>
+
+</div>
+
+<div class="requestScreen hidden" id="screenDone">
+
+<p class="requestText">
+The admins will review your request within a week.
+</p>
+
+<button class="button create hover-lift" id="backToLoginButton">
+Back to Login
+</button>
+
+</div>
+
+</div>
 
 </div>
 
@@ -55,53 +90,89 @@ Back
 
 <script>
 
+let googleCredential=null;
+
 google.accounts.id.initialize({
 client_id:CONFIG.CLIENT_ID,
-callback:handleRequest
+callback:response=>{
+
+googleCredential=response.credential;
+
+}
 });
 
 google.accounts.id.renderButton(
 document.getElementById("googleButton"),
 {
-theme:"outline",
+theme:"filled_blue",
 size:"large",
 shape:"pill",
 text:"signin_with",
-width:320
+width:260
 }
 );
 
-async function handleRequest(response){
+setTimeout(()=>{
+
+document.getElementById("screenIntro").classList.add("hidden");
+document.getElementById("screenForm").classList.remove("hidden");
+
+},2000);
+
+document.getElementById("submitRequestButton").addEventListener("click",async()=>{
+
+const errorBox=document.getElementById("error");
+
+errorBox.textContent="";
+errorBox.classList.remove("show");
+
+if(!googleCredential){
+
+errorBox.textContent="Please sign in with your school Google account first.";
+errorBox.classList.add("show");
+
+return;
+
+}
+
+const username=document.getElementById("usernameInput").value.trim();
+
+if(!username){
+
+errorBox.textContent="Please choose a username.";
+errorBox.classList.add("show");
+
+return;
+
+}
 
 const loading=document.getElementById("loading");
 
-if(loading){
 loading.classList.remove("hidden");
-}
 
-document.getElementById("status").textContent="Submitting request...";
+const result=await Sheets.requestAccount(googleCredential,username);
 
-const result=await Sheets.requestAccount(response.credential);
-
-if(loading){
 loading.classList.add("hidden");
-}
 
 if(result.success){
 
-document.getElementById("status").textContent="Your request has been submitted successfully.";
-
-document.getElementById("error").textContent="";
+document.getElementById("screenForm").classList.add("hidden");
+document.getElementById("screenDone").classList.remove("hidden");
 
 }else{
 
-document.getElementById("status").textContent="";
-
-document.getElementById("error").textContent=result.message;
-
-}
+errorBox.textContent=result.message||"Something went wrong.";
+errorBox.classList.add("show");
 
 }
+
+});
+
+document.getElementById("backToLoginButton").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.LOGIN;
+
+});
 
 </script>
 

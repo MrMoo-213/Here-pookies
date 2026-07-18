@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<title>Apps</title>
+<title>Games</title>
 
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<div class="loading hidden" id="loading">
+<div class="loading" id="loading">
 <div class="spinner"></div>
 </div>
 
@@ -23,44 +23,57 @@
 <header class="topbar">
 
 <div class="title">
-Apps
+Games
 </div>
 
 <div class="userArea">
 
+<div class="navMenu" id="navMenu" tabindex="0">
+
 <button class="menuButton" id="homeButton" aria-label="Home">
 ☰
 </button>
+
+<div class="navFly">
+
+<button class="navBubble navBubble-chat" id="navChat" aria-label="Chat">
+💬
+</button>
+
+<button class="navBubble navBubble-home" id="navHome" aria-label="Home">
+🏠
+</button>
+
+<button class="navBubble navBubble-comp" id="navComp" aria-label="Competitions">
+🏆
+</button>
+
+</div>
+
+</div>
 
 </div>
 
 </header>
 
 <main class="apps-grid" id="appsGrid">
-
-<button class="pill pill-blue" id="geometryDashButton">
-Geometry Dash
-</button>
-
-<button class="pill pill-blue" id="mergeFellasButton">
-Merge Fellas
-</button>
-
-<button class="pill pill-blue" id="mergeFruitsButton">
-Merge Fruits
-</button>
-
 </main>
+
+<p class="emptyState hidden" id="emptyState">
+No games yet.
+</p>
 
 </div>
 
 <div class="iconStack">
 
 <button class="iconBtn" id="layoutButton" aria-label="Toggle layout">
-📖
+<span class="iosSwitch" id="iosSwitch">
+<span class="iosKnob"></span>
+</span>
 </button>
 
-<button class="iconBtn" id="addButton" aria-label="Add app">
+<button class="iconBtn" id="addButton" aria-label="Add game">
 ＋
 </button>
 
@@ -83,7 +96,32 @@ Logout
 
 </div>
 
+<div class="settingsPanel hidden" id="addGamePanel">
+
+<h2>Add Game</h2>
+
+<label class="fieldLabel" for="gameNameInput">New Game Name:</label>
+<input class="fieldInput" id="gameNameInput" type="text" placeholder="e.g. Geometry Dash" autocomplete="off">
+
+<label class="fieldLabel" for="gameUrlInput">URL:</label>
+<input class="fieldInput" id="gameUrlInput" type="text" placeholder="https://..." autocomplete="off">
+
+<div class="formActions">
+
+<button class="submitSmall" id="gameSubmitButton">
+Submit
+</button>
+
+</div>
+
+</div>
+
 <div class="settingsOverlay hidden" id="settingsOverlay"></div>
+
+<div class="toast hidden" id="toast">
+<span class="toastCheck">✓</span>
+<span class="toastText">Successfully Requested</span>
+</div>
 
 <script src="/js/config.js"></script>
 <script src="/js/session.js"></script>
@@ -111,9 +149,59 @@ document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
 
 }
 
+await loadGames();
+
 loading.classList.add("hidden");
 
 });
+
+async function loadGames(){
+
+const grid=document.getElementById("appsGrid");
+const emptyState=document.getElementById("emptyState");
+
+grid.innerHTML="";
+
+const result=await Sheets.getGames();
+
+if(!result.success||!result.games||result.games.length===0){
+
+emptyState.classList.remove("hidden");
+
+return;
+
+}
+
+emptyState.classList.add("hidden");
+
+result.games.forEach(game=>{
+
+const button=document.createElement("button");
+
+button.className="pill pill-blue";
+button.textContent=game.name;
+
+button.addEventListener("click",()=>{
+
+if(game.internal){
+
+const path=game.url.startsWith("/")?game.url:"/"+game.url;
+
+window.location.href=path;
+
+}else{
+
+window.open(game.url,"_blank","noopener");
+
+}
+
+});
+
+grid.appendChild(button);
+
+});
+
+}
 
 document.getElementById("homeButton").addEventListener("click",()=>{
 
@@ -121,33 +209,30 @@ window.location.href=CONFIG.ROUTES.HOME;
 
 });
 
-document.getElementById("geometryDashButton").addEventListener("click",()=>{
+document.getElementById("navHome").addEventListener("click",()=>{
 
-window.location.href="/home/apps/geometry-dash";
-
-});
-
-document.getElementById("mergeFellasButton").addEventListener("click",()=>{
-
-window.location.href="/home/apps/merge-fellas";
+window.location.href=CONFIG.ROUTES.HOME;
 
 });
 
-document.getElementById("mergeFruitsButton").addEventListener("click",()=>{
+document.getElementById("navChat").addEventListener("click",()=>{
 
-window.location.href="/home/apps/merge-fruits";
+window.location.href=CONFIG.ROUTES.CHAT;
+
+});
+
+document.getElementById("navComp").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.COMPETITIONS;
 
 });
 
-document.getElementById("addButton").addEventListener("click",()=>{
-
-alert("Adding new apps is coming soon.");
-
-});
+const iosSwitch=document.getElementById("iosSwitch");
 
 document.getElementById("layoutButton").addEventListener("click",()=>{
 
 document.getElementById("appsGrid").classList.toggle("list-view");
+iosSwitch.classList.toggle("on");
 
 });
 
@@ -158,18 +243,107 @@ Auth.logout();
 });
 
 const gearButton=document.getElementById("gearButton");
+const addButton=document.getElementById("addButton");
 const settingsPanel=document.getElementById("settingsPanel");
+const addGamePanel=document.getElementById("addGamePanel");
 const settingsOverlay=document.getElementById("settingsOverlay");
+
+function closeAllPanels(){
+
+settingsPanel.classList.add("hidden");
+addGamePanel.classList.add("hidden");
+settingsOverlay.classList.add("hidden");
+
+}
 
 function toggleSettings(){
 
-settingsPanel.classList.toggle("hidden");
-settingsOverlay.classList.toggle("hidden");
+const wasHidden=settingsPanel.classList.contains("hidden");
+
+closeAllPanels();
+
+if(wasHidden){
+
+settingsPanel.classList.remove("hidden");
+settingsOverlay.classList.remove("hidden");
+
+}
+
+}
+
+function toggleAddGame(){
+
+const wasHidden=addGamePanel.classList.contains("hidden");
+
+closeAllPanels();
+
+if(wasHidden){
+
+addGamePanel.classList.remove("hidden");
+settingsOverlay.classList.remove("hidden");
+
+}
 
 }
 
 gearButton.addEventListener("click",toggleSettings);
-settingsOverlay.addEventListener("click",toggleSettings);
+addButton.addEventListener("click",toggleAddGame);
+settingsOverlay.addEventListener("click",closeAllPanels);
+
+const gameNameInput=document.getElementById("gameNameInput");
+const gameUrlInput=document.getElementById("gameUrlInput");
+const gameSubmitButton=document.getElementById("gameSubmitButton");
+const toast=document.getElementById("toast");
+
+let toastTimer=null;
+
+function showToast(){
+
+clearTimeout(toastTimer);
+
+toast.classList.remove("hidden");
+
+requestAnimationFrame(()=>{
+
+toast.classList.add("show");
+
+});
+
+toastTimer=setTimeout(()=>{
+
+toast.classList.remove("show");
+
+setTimeout(()=>{
+
+toast.classList.add("hidden");
+
+},250);
+
+},3000);
+
+}
+
+gameSubmitButton.addEventListener("click",async()=>{
+
+const name=gameNameInput.value.trim();
+const url=gameUrlInput.value.trim();
+
+if(!name||!url)return;
+
+gameSubmitButton.disabled=true;
+
+await Sheets.submitGameRequest(name,url);
+
+gameNameInput.value="";
+gameUrlInput.value="";
+
+gameSubmitButton.disabled=false;
+
+closeAllPanels();
+
+showToast();
+
+});
 
 </script>
 
