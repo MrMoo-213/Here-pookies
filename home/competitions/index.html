@@ -30,6 +30,8 @@ Competitions
 
 <div class="navMenu" id="navMenu">
 
+<div class="navHoverZone"></div>
+
 <button class="menuButton" id="menuButton" aria-label="Menu">
 ☰
 </button>
@@ -46,6 +48,10 @@ Competitions
 
 <button class="navItem competition" id="navCompetition" aria-label="Competitions">
 🏆
+</button>
+
+<button class="navItem dms" id="navDms" aria-label="DMs">
+💬
 </button>
 
 </div>
@@ -102,6 +108,12 @@ window.location.href=CONFIG.ROUTES.CHAT;
 document.getElementById("navCompetition").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.COMPETITIONS;
+
+});
+
+document.getElementById("navDms").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.CHAT+"?dm=1";
 
 });
 
