@@ -10,7 +10,7 @@
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleSignIn()"></script>
 
 </head>
 <body>
@@ -88,6 +88,8 @@ Back
 
 let pendingIdToken=null;
 
+function initGoogleSignIn(){
+
 google.accounts.id.initialize({
 client_id:CONFIG.CLIENT_ID,
 callback:handleGoogleSignIn
@@ -100,9 +102,11 @@ theme:"outline",
 size:"large",
 shape:"pill",
 text:"signin_with",
-width:280
+width:320
 }
 );
+
+}
 
 function handleGoogleSignIn(response){
 
