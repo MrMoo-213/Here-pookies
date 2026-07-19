@@ -14,13 +14,8 @@
 </head>
 <body>
 
-<div class="loading" id="loading">
+<div class="loading hidden" id="loading">
 <div class="spinner"></div>
-</div>
-
-<div class="toast" id="toast">
-<span class="tick">✓</span>
-<span id="toastText">Successfully Requested</span>
 </div>
 
 <div class="dashboard">
@@ -28,7 +23,7 @@
 <header class="topbar">
 
 <div class="title">
-Games
+FNAF
 </div>
 
 <div class="userArea">
@@ -63,22 +58,43 @@ Games
 
 <main class="apps-grid" id="appsGrid">
 
+<button class="pill pill-blue" data-url="https://irv77.github.io/hd_fnaf/1/">
+FNAF 1
+</button>
+
+<button class="pill pill-blue" data-url="https://irv77.github.io/hd_fnaf/2/">
+FNAF 2
+</button>
+
+<button class="pill pill-blue" data-url="https://irv77.github.io/hd_fnaf/3/">
+FNAF 3
+</button>
+
+<button class="pill pill-blue" data-url="https://irv77.github.io/hd_fnaf/4/">
+FNAF 4
+</button>
+
+<button class="pill pill-blue" data-url="https://irv77.github.io/hd_fnaf/w/">
+FNAF World
+</button>
+
+<button class="pill pill-blue" data-url="https://irv77.github.io/hd_fnaf/sl/">
+FNAF Sister Location
+</button>
+
+<button class="pill pill-blue" data-url="https://irv77.github.io/hd_fnaf/ps/">
+FNAF Pizzeria Simulator
+</button>
+
+<button class="pill pill-blue" data-url="https://irv77.github.io/hd_fnaf/ucn/">
+FNAF UCN
+</button>
+
 </main>
 
 </div>
 
 <div class="iconStack">
-
-<button class="iconBtn" id="layoutButton" aria-label="Toggle layout">
-<svg viewBox="0 0 36 20" width="24" height="14">
-<rect x="1" y="1" width="34" height="18" rx="9" fill="none" stroke="currentColor" stroke-width="2"/>
-<circle cx="10" cy="10" r="6" fill="currentColor"/>
-</svg>
-</button>
-
-<button class="iconBtn" id="addButton" aria-label="Add game">
-＋
-</button>
 
 <button class="iconBtn" id="gearButton" aria-label="Settings">
 ⚙
@@ -99,22 +115,6 @@ Logout
 
 </div>
 
-<div class="settingsPanel hidden" id="addPanel">
-
-<h2>New Game</h2>
-
-<label for="gameNameInput">Game Name:</label>
-<input type="text" id="gameNameInput" placeholder="e.g. Chess">
-
-<label for="gameUrlInput">URL:</label>
-<input type="text" id="gameUrlInput" placeholder="https://example.com">
-
-<button class="button create small" id="submitGameButton">
-Submit
-</button>
-
-</div>
-
 <div class="settingsOverlay hidden" id="settingsOverlay"></div>
 
 <script src="/js/config.js"></script>
@@ -126,75 +126,34 @@ Submit
 
 <script>
 
-function showToast(message){
-
-const toast=document.getElementById("toast");
-document.getElementById("toastText").textContent=message;
-
-toast.classList.add("show");
-
-setTimeout(()=>{
-
-toast.classList.remove("show");
-
-},3000);
-
-}
-
-function renderGames(games){
-
-const grid=document.getElementById("appsGrid");
-grid.innerHTML="";
-
-games.forEach(game=>{
-
-const button=document.createElement("button");
-button.className="pill pill-blue";
-button.textContent=game.name;
-
-button.addEventListener("click",()=>{
-
-if(game.internal){
-
-window.location.href="/"+game.url.replace(/^\/+/,"");
-
-}else{
-
-window.open(game.url,"_blank");
-
-}
-
-});
-
-grid.appendChild(button);
-
-});
-
-}
-
 window.addEventListener("load",async()=>{
 
 const loading=document.getElementById("loading");
 
-const result=await Sheets.loadApps();
+const allowed=await Security.protect();
 
-if(!result.success){
+if(!allowed)return;
 
-SessionManager.destroy();
-window.location.replace(CONFIG.ROUTES.LOGIN);
-return;
+const user=await Security.getUser();
+
+if(user){
+
+document.getElementById("email").textContent=user.email;
+document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
 
 }
 
-document.getElementById("email").textContent=result.user.email;
-document.getElementById("role").textContent=CONFIG.ROLE_NAMES[result.user.role];
-
-renderGames(result.games);
-
-SessionManager.startWatcher();
-Logger.page(window.location.pathname);
-
 loading.classList.add("hidden");
+
+});
+
+document.querySelectorAll("#appsGrid .pill").forEach(button=>{
+
+button.addEventListener("click",()=>{
+
+window.open(button.dataset.url,"_blank");
+
+});
 
 });
 
@@ -232,12 +191,6 @@ navMenu.classList.remove("open");
 
 });
 
-document.getElementById("layoutButton").addEventListener("click",()=>{
-
-document.getElementById("appsGrid").classList.toggle("list-view");
-
-});
-
 document.getElementById("logoutButton").addEventListener("click",()=>{
 
 Auth.logout();
@@ -246,22 +199,23 @@ Auth.logout();
 
 const gearButton=document.getElementById("gearButton");
 const settingsPanel=document.getElementById("settingsPanel");
-const addPanel=document.getElementById("addPanel");
 const settingsOverlay=document.getElementById("settingsOverlay");
 
-function toggleSettings(){
+gearButton.addEventListener("click",()=>{
 
 settingsPanel.classList.toggle("hidden");
 settingsOverlay.classList.toggle("hidden");
 
-}
+});
 
-function toggleAddPanel(){
+settingsOverlay.addEventListener("click",()=>{
 
-addPanel.classList.toggle("hidden");
-settingsOverlay.classList.toggle("hidden");
+settingsPanel.classList.add("hidden");
+settingsOverlay.classList.add("hidden");
 
-}
+});
+
 </script>
+
 </body>
 </html>
