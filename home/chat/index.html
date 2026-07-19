@@ -23,12 +23,15 @@
 <header class="topbar">
 
 <div class="title">
-Chat
+<span id="viewTitle">Chat</span>
+<button class="dmToggleButton" id="dmToggleButton">DMs</button>
 </div>
 
 <div class="userArea">
 
 <div class="navMenu" id="navMenu">
+
+<div class="navHoverZone"></div>
 
 <button class="menuButton" id="menuButton" aria-label="Menu">
 ☰
@@ -48,6 +51,10 @@ Chat
 🏆
 </button>
 
+<button class="navItem dms" id="navDms" aria-label="DMs">
+💬
+</button>
+
 </div>
 
 </div>
@@ -56,7 +63,7 @@ Chat
 
 </header>
 
-<div class="chatArea">
+<div class="chatArea" id="gcView">
 
 <div class="chatMessages" id="chatMessages">
 
@@ -100,6 +107,22 @@ Slow Mode Is On
 <button class="sendButton" id="sendButton">
 Send
 </button>
+
+</div>
+
+</div>
+
+<div class="comingSoon hidden" id="dmsView">
+
+<div>
+
+<h1>
+DMs are on the way
+</h1>
+
+<p class="dmsNote">
+Adding people by school number or username, request/accept, and privacy controls are being built next. This view is a placeholder for now.
+</p>
 
 </div>
 
@@ -197,8 +220,10 @@ return bubble;
 function appendMessage(msg){
 
 const container=document.getElementById("chatMessages");
-container.appendChild(buildMessageBubble(msg));
+const bubble=buildMessageBubble(msg);
+container.appendChild(bubble);
 container.scrollTop=container.scrollHeight;
+return bubble;
 
 }
 
@@ -251,6 +276,12 @@ currentUser=result.user;
 
 renderInitialMessages(result.messages);
 
+if(new URLSearchParams(window.location.search).get("dm")==="1"){
+
+setDmView(true);
+
+}
+
 loading.classList.add("hidden");
 
 setInterval(pollMessages,5000);
@@ -272,6 +303,32 @@ window.location.href=CONFIG.ROUTES.CHAT;
 document.getElementById("navCompetition").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.COMPETITIONS;
+
+});
+
+let inDmView=false;
+
+function setDmView(open){
+
+inDmView=open;
+
+document.getElementById("gcView").classList.toggle("hidden",open);
+document.getElementById("dmsView").classList.toggle("hidden",!open);
+document.getElementById("viewTitle").textContent=open?"DMs":"Chat";
+document.getElementById("dmToggleButton").textContent=open?"GC":"DMs";
+
+}
+
+document.getElementById("dmToggleButton").addEventListener("click",()=>{
+
+setDmView(!inDmView);
+
+});
+
+document.getElementById("navDms").addEventListener("click",(e)=>{
+
+e.stopPropagation();
+setDmView(true);
 
 });
 
@@ -393,7 +450,7 @@ optimisticAttachmentType=fileTypeHint;
 
 }
 
-appendMessage({
+const bubble=appendMessage({
 username:currentUser.username,
 role:currentUser.role,
 message:text,
@@ -402,6 +459,17 @@ attachmentType:optimisticAttachmentType
 });
 
 confirmedCount++;
+
+let statusTag=null;
+
+if(fileToSend){
+
+statusTag=document.createElement("div");
+statusTag.className="uploadStatus";
+statusTag.textContent=fileTypeHint==="video"?"Uploading video...":"Uploading...";
+bubble.appendChild(statusTag);
+
+}
 
 let attachmentUrl="";
 let attachmentType="";
@@ -421,9 +489,16 @@ if(uploadResult.success){
 attachmentUrl=uploadResult.url;
 attachmentType=uploadResult.type;
 
+if(statusTag)statusTag.remove();
+
 }else{
 
-alert("Attachment failed to upload: "+(uploadResult.message||"unknown error"));
+if(statusTag){
+
+statusTag.textContent="Failed to send";
+statusTag.classList.add("failed");
+
+}
 
 }
 
