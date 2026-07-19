@@ -14,7 +14,7 @@
 </head>
 <body>
 
-<div class="loading hidden" id="loading">
+<div class="loading" id="loading">
 <div class="spinner"></div>
 </div>
 
@@ -56,11 +56,48 @@ Chat
 
 </header>
 
-<div class="comingSoon">
+<div class="chatArea">
 
-<h1>
-Coming Soon...
-</h1>
+<div class="chatMessages" id="chatMessages">
+
+</div>
+
+<div class="chatInputBar">
+
+<button class="attachButton" id="attachButton" aria-label="Attach">
+＋
+</button>
+
+<div class="attachMenu" id="attachMenu">
+
+<button class="attachMenuItem" id="attachFileItem">
+📎 Attach File
+</button>
+
+<button class="attachMenuItem disabled" disabled>
+🖼 Meme Library (Coming soon)
+</button>
+
+</div>
+
+<input type="file" id="fileInput" accept="image/*,video/*" hidden>
+
+<div class="attachPreview hidden" id="attachPreview">
+
+<img id="previewImage" class="hidden">
+<video id="previewVideo" class="hidden" muted></video>
+
+<button id="removeAttachmentButton">✕</button>
+
+</div>
+
+<input type="text" class="chatInput" id="chatInput" placeholder="Type Here...">
+
+<button class="sendButton" id="sendButton">
+Send
+</button>
+
+</div>
 
 </div>
 
@@ -75,6 +112,87 @@ Coming Soon...
 
 <script>
 
+let pendingFile=null;
+let pendingFileType=null;
+
+function linkify(text){
+
+const escaped=text
+.replace(/&/g,"&amp;")
+.replace(/</g,"&lt;")
+.replace(/>/g,"&gt;");
+
+return escaped.replace(/(https?:\/\/[^\s]+)/g,url=>{
+
+return "<a href=\""+url+"\" target=\"_blank\" rel=\"noopener\">"+url+"</a>";
+
+});
+
+}
+
+function renderMessages(messages){
+
+const container=document.getElementById("chatMessages");
+container.innerHTML="";
+
+messages.forEach(msg=>{
+
+const bubble=document.createElement("div");
+bubble.className="chatMessage";
+
+const sender=document.createElement("div");
+sender.className="sender";
+sender.textContent=msg.username+" ("+CONFIG.ROLE_NAMES[msg.role]+"):";
+bubble.appendChild(sender);
+
+if(msg.message){
+
+const text=document.createElement("div");
+text.className="text";
+text.innerHTML=linkify(msg.message);
+bubble.appendChild(text);
+
+}
+
+if(msg.attachmentUrl){
+
+if(msg.attachmentType==="video"){
+
+const video=document.createElement("video");
+video.src=msg.attachmentUrl;
+video.controls=true;
+bubble.appendChild(video);
+
+}else{
+
+const img=document.createElement("img");
+img.src=msg.attachmentUrl;
+bubble.appendChild(img);
+
+}
+
+}
+
+container.appendChild(bubble);
+
+});
+
+container.scrollTop=container.scrollHeight;
+
+}
+
+async function loadMessages(){
+
+const result=await Sheets.getMessages();
+
+if(result.success){
+
+renderMessages(result.messages);
+
+}
+
+}
+
 window.addEventListener("load",async()=>{
 
 const loading=document.getElementById("loading");
@@ -83,7 +201,11 @@ const allowed=await Security.protect();
 
 if(!allowed)return;
 
+await loadMessages();
+
 loading.classList.add("hidden");
+
+setInterval(loadMessages,5000);
 
 });
 
@@ -115,9 +237,141 @@ navMenu.classList.toggle("open");
 
 });
 
+const attachMenu=document.getElementById("attachMenu");
+const attachButton=document.getElementById("attachButton");
+
+attachButton.addEventListener("click",(e)=>{
+
+e.stopPropagation();
+attachMenu.classList.toggle("open");
+
+});
+
 document.addEventListener("click",()=>{
 
 navMenu.classList.remove("open");
+attachMenu.classList.remove("open");
+
+});
+
+const fileInput=document.getElementById("fileInput");
+
+document.getElementById("attachFileItem").addEventListener("click",()=>{
+
+attachMenu.classList.remove("open");
+fileInput.click();
+
+});
+
+fileInput.addEventListener("change",()=>{
+
+const file=fileInput.files[0];
+if(!file)return;
+
+pendingFile=file;
+pendingFileType=file.type.indexOf("video/")===0?"video":"image";
+
+const previewBox=document.getElementById("attachPreview");
+const previewImage=document.getElementById("previewImage");
+const previewVideo=document.getElementById("previewVideo");
+
+const url=URL.createObjectURL(file);
+
+if(pendingFileType==="video"){
+
+previewVideo.src=url;
+previewVideo.classList.remove("hidden");
+previewImage.classList.add("hidden");
+
+}else{
+
+previewImage.src=url;
+previewImage.classList.remove("hidden");
+previewVideo.classList.add("hidden");
+
+}
+
+previewBox.classList.remove("hidden");
+
+});
+
+document.getElementById("removeAttachmentButton").addEventListener("click",()=>{
+
+pendingFile=null;
+pendingFileType=null;
+fileInput.value="";
+document.getElementById("attachPreview").classList.add("hidden");
+
+});
+
+function fileToBase64(file){
+
+return new Promise((resolve,reject)=>{
+
+const reader=new FileReader();
+
+reader.onload=()=>resolve(reader.result.split(",")[1]);
+reader.onerror=reject;
+
+reader.readAsDataURL(file);
+
+});
+
+}
+
+document.getElementById("sendButton").addEventListener("click",async()=>{
+
+const input=document.getElementById("chatInput");
+const text=input.value.trim();
+
+if(!text&&!pendingFile)return;
+
+const sendButton=document.getElementById("sendButton");
+sendButton.disabled=true;
+
+let attachmentUrl="";
+let attachmentType="";
+
+if(pendingFile){
+
+const base64Data=await fileToBase64(pendingFile);
+
+const uploadResult=await Sheets.uploadAttachment(
+pendingFile.name,
+pendingFile.type,
+base64Data
+);
+
+if(uploadResult.success){
+
+attachmentUrl=uploadResult.url;
+attachmentType=uploadResult.type;
+
+}
+
+}
+
+await Sheets.sendMessage(text,attachmentUrl,attachmentType);
+
+input.value="";
+pendingFile=null;
+pendingFileType=null;
+fileInput.value="";
+document.getElementById("attachPreview").classList.add("hidden");
+
+await loadMessages();
+
+sendButton.disabled=false;
+
+});
+
+document.getElementById("chatInput").addEventListener("keydown",e=>{
+
+if(e.key==="Enter"){
+
+document.getElementById("sendButton").click();
+
+}
 
 });
 
