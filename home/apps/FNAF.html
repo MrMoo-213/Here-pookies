@@ -30,6 +30,8 @@ FNAF
 
 <div class="navMenu" id="navMenu">
 
+<div class="navHoverZone"></div>
+
 <button class="menuButton" id="menuButton" aria-label="Menu">
 ☰
 </button>
@@ -46,6 +48,10 @@ FNAF
 
 <button class="navItem competition" id="navCompetition" aria-label="Competitions">
 🏆
+</button>
+
+<button class="navItem dms" id="navDms" aria-label="DMs">
+💬
 </button>
 
 </div>
@@ -151,6 +157,8 @@ document.querySelectorAll("#appsGrid .pill").forEach(button=>{
 
 button.addEventListener("click",()=>{
 
+Sheets.log("GAME_CLICK",button.textContent.trim());
+
 window.open(button.dataset.url,"_blank");
 
 });
@@ -172,6 +180,12 @@ window.location.href=CONFIG.ROUTES.CHAT;
 document.getElementById("navCompetition").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.COMPETITIONS;
+
+});
+
+document.getElementById("navDms").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.CHAT+"?dm=1";
 
 });
 
