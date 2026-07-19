@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
-<title>Games</title>
+<title>FNAF</title>
 
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
@@ -104,10 +104,10 @@ Logout
 <h2>New Game</h2>
 
 <label for="gameNameInput">Game Name:</label>
-<input type="text" id="gameNameInput" placeholder="e.g. Minecraft">
+<input type="text" id="gameNameInput" placeholder="e.g. Chess">
 
-<label for="gameUrlInput">URL (If you want me to find it put **google.com** in this box):</label>
-<input type="text" id="gameUrlInput" placeholder="google.com/super-leng">
+<label for="gameUrlInput">URL:</label>
+<input type="text" id="gameUrlInput" placeholder="https://example.com">
 
 <button class="button create small" id="submitGameButton">
 Submit
@@ -262,42 +262,6 @@ addPanel.classList.toggle("hidden");
 settingsOverlay.classList.toggle("hidden");
 
 }
-
-gearButton.addEventListener("click",toggleSettings);
-
-document.getElementById("addButton").addEventListener("click",toggleAddPanel);
-
-settingsOverlay.addEventListener("click",()=>{
-
-settingsPanel.classList.add("hidden");
-addPanel.classList.add("hidden");
-settingsOverlay.classList.add("hidden");
-
-});
-
-document.getElementById("submitGameButton").addEventListener("click",async()=>{
-
-const nameInput=document.getElementById("gameNameInput");
-const urlInput=document.getElementById("gameUrlInput");
-
-const name=nameInput.value.trim();
-const url=urlInput.value.trim();
-
-if(!name||!url)return;
-
-await Sheets.requestGame(name,url);
-
-nameInput.value="";
-urlInput.value="";
-
-addPanel.classList.add("hidden");
-settingsOverlay.classList.add("hidden");
-
-showToast("Successfully Requested");
-
-});
-
 </script>
-
 </body>
 </html>
