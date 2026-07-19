@@ -1,7 +1,5 @@
 document.addEventListener("DOMContentLoaded",async()=>{
 
-await Auth.autoLogin();
-
 Auth.initialise();
 
 const guestButton=document.getElementById("guestButton");
@@ -27,6 +25,8 @@ window.location.href=CONFIG.ROUTES.CREATE;
 });
 
 }
+
+await Auth.autoLogin();
 
 const loading=document.getElementById("loading");
 
