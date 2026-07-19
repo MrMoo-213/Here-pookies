@@ -149,6 +149,35 @@ align-items:center;
 justify-content:center;
 }
 
+.wrongDomainBadge{
+width:100%;
+max-width:320px;
+height:40px;
+background:#d43b3b;
+color:#fff;
+border-radius:20px;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:8px;
+font-weight:600;
+font-size:14px;
+animation:SlideUp .25s ease;
+}
+
+.wrongDomainBadge .cross{
+width:20px;
+height:20px;
+border-radius:50%;
+background:#fff;
+color:#000;
+font-size:11px;
+font-weight:900;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
 #error{
 min-height:24px;
 max-width:360px;
