@@ -10,6 +10,37 @@
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
 
+<script>
+
+function initGoogleSignIn(){
+
+if(typeof CONFIG==="undefined"||typeof google==="undefined"||typeof handleGoogleSignIn==="undefined"){
+
+setTimeout(initGoogleSignIn,50);
+return;
+
+}
+
+google.accounts.id.initialize({
+client_id:CONFIG.CLIENT_ID,
+callback:handleGoogleSignIn
+});
+
+google.accounts.id.renderButton(
+document.getElementById("googleButton"),
+{
+theme:"outline",
+size:"large",
+shape:"pill",
+text:"signin_with",
+width:320
+}
+);
+
+}
+
+</script>
+
 <script src="https://accounts.google.com/gsi/client" async defer onload="initGoogleSignIn()"></script>
 
 </head>
@@ -45,6 +76,11 @@ If so ask them, don't fill this out.
 <p>Log in with your school account:</p>
 
 <div id="googleButton"></div>
+
+<div class="signedInBadge hidden" id="googleSignedIn">
+<span class="tick">✓</span>
+Signed in with Google
+</div>
 
 <label for="usernameInput">Choose a username:</label>
 <input type="text" id="usernameInput" placeholder="Enter Here">
@@ -88,29 +124,12 @@ Back
 
 let pendingIdToken=null;
 
-function initGoogleSignIn(){
-
-google.accounts.id.initialize({
-client_id:CONFIG.CLIENT_ID,
-callback:handleGoogleSignIn
-});
-
-google.accounts.id.renderButton(
-document.getElementById("googleButton"),
-{
-theme:"outline",
-size:"large",
-shape:"pill",
-text:"signin_with",
-width:320
-}
-);
-
-}
-
 function handleGoogleSignIn(response){
 
 pendingIdToken=response.credential;
+
+document.getElementById("googleButton").classList.add("hidden");
+document.getElementById("googleSignedIn").classList.remove("hidden");
 
 }
 
