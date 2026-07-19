@@ -1,4 +1,43 @@
-##Google apps script:
+## Here-pookies project knowledge (for any AI picking this up)
+
+## Overview
+School-restricted website (Imberhorne school, domain imberhorne.co.uk). Frontend on GitHub Pages / Vercel, backend is a single Google Apps Script Web App (Code.gs) reading/writing a Google Sheet. Static site, no build step, no framework — plain HTML/CSS/JS.
+
+## Conventions
+- No code comments anywhere (user's explicit preference), including in Code.gs.
+- Formatting style throughout the codebase: blank line between almost every statement (this is the user's existing style, matched in all files, not something to "fix").
+- CSS variables/classes are shared globally: css/style.css (auth pages: login, create, guest) and css/home.css (dashboard pages: home, apps, chat, competitions, FNAF).
+- Content-Type on all fetch calls to Apps Script MUST be text/plain;charset=utf-8, not application/json — application/json triggers a CORS preflight that Apps Script web apps can't answer, breaking every request silently.
+- IMPORTANT GOTCHA: duplicate function/method names (in Code.gs, or duplicate static methods in a JS class like Sheets) do NOT throw — the LAST declaration silently wins. This caused real bugs before (chat attachments failed silently for a while). Always grep for duplicate function/case names before editing Code.gs or sheets.js.
+- Spreadsheet ID is baked directly into Code.gs (const SPREADSHEET_ID). Current ID: 1iB9auDG4m-_ziFl15h_yvJGQ0NQS2oQ9SvcxVX14uf0
+- After ANY Code.gs change: paste into Apps Script editor, then Deploy -> Manage deployments -> edit (pencil) -> Version: New -> Deploy. Saving alone does NOT update the live /exec endpoint.
+- If Code.gs gains a new Google API usage (e.g. DriveApp), the script owner must manually re-authorize: select the relevant no-arg function in the Apps Script dropdown (e.g. getOrCreateChatFolder), Run it, approve the permission prompt, then redeploy.
+
+## Routes (js/config.js CONFIG.ROUTES)
+- / — login page (index.html)
+- /home — dashboard (3 pills: Competitions, Apps, Chat)
+- /home/apps — games list, dynamic from Games sheet
+- /home/apps/FNAF — hardcoded FNAF sub-games, no sheet dependency
+- /home/competitions — coming soon placeholder
+- /home/chat — chat (GC) + DMs toggle (DMs is UI-only placeholder currently, see Pending below)
+- /guest — public "coming soon" benefits page, no auth
+- /create — request-account flow (3 stages: warning -> google signin + username -> confirmation)
+- /404.html — GitHub Pages 404
+
+## Google Sheets structure
+1. Users: Email, Username, Role (0=User,1=Admin,2=Manager,3=Creator), Active (TRUE gates login)
+2. Logs: Timestamp, Email, Action, Details, IP (IP always blank — Apps Script web apps can't see client IP)
+3. Account Requests: Timestamp, Email, Name, Status
+4. Active Sessions: Token, Email, Created, Expires, IP
+5. Games: Name, URL, Internal (1=internal path like home/apps/x, 0=external full URL), Rating (0 default, unused so far)
+6. Game Requests: Timestamp, Email, Name, URL (dedup by URL, silently ignored if duplicate)
+7. Chat Messages: Timestamp, Email, Username, Role, Message, AttachmentURL, AttachmentType, LoveCount, HeartCount (last 2 unused by frontend currently, reactToMessage action exists server-side but nothing calls it yet)
+
+## Backend actions (doPost, Code.gs)
+login, validateSession, getUser, getRole, logout, log, requestAccount, heartbeat, getGames, loadApps (combined session+user+games, used by /apps to cut round trips), requestGame, loadChat (combined session+user+messages, used by /chat), getMessages, sendMessage, uploadAttachment (saves to Drive folder "Here Pookies Chat Uploads", returns viewable URL), reactToMessage (exists, unused by frontend).
+
+## Current Code.gs (authoritative, paste this exact file into Apps Script)
+
 const SPREADSHEET_ID = "1iB9auDG4m-_ziFl15h_yvJGQ0NQS2oQ9SvcxVX14uf0";
 
 const CLIENT_ID = "324275074378-jtfm32a1podbaeijbc6ncqkqod4gjoge.apps.googleusercontent.com";
@@ -14,8 +53,6 @@ const SHEET_GAMES = "Games";
 const SHEET_GAME_REQUESTS = "Game Requests";
 const SHEET_CHAT = "Chat Messages";
 const CHAT_FOLDER_NAME = "Here Pookies Chat Uploads";
-
-/* ---------- Entry points ---------- */
 
 function doPost(e) {
   let body;
@@ -73,8 +110,6 @@ function doPost(e) {
 function doGet(e) {
   return ContentService.createTextOutput("Here-pookies backend is running.");
 }
-
-/* ---------- Action handlers ---------- */
 
 function handleLogin(idToken) {
   if (!idToken) return { success: false, message: "Missing token." };
@@ -180,8 +215,6 @@ function handleRequestAccount(idTokenOrEmail, name) {
   return { success: true, message: "Request submitted." };
 }
 
-/* ---------- Games ---------- */
-
 function handleGetGames(token) {
   const validation = handleValidateSession(token);
   if (!validation.success) return validation;
@@ -250,8 +283,6 @@ function handleRequestGame(token, name, url) {
 
   return { success: true };
 }
-
-/* ---------- Chat ---------- */
 
 function getMessagesList() {
   const sheet = getSheet(SHEET_CHAT);
@@ -385,8 +416,6 @@ function getOrCreateChatFolder() {
   return DriveApp.createFolder(CHAT_FOLDER_NAME);
 }
 
-/* ---------- Google token verification ---------- */
-
 function verifyGoogleIdToken(idToken) {
   const url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(idToken);
   const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
@@ -401,8 +430,6 @@ function verifyGoogleIdToken(idToken) {
 
   return claims;
 }
-
-/* ---------- Sheet helpers ---------- */
 
 function getSpreadsheet() {
   return SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -476,8 +503,6 @@ function generateToken() {
   return Utilities.getUuid() + Utilities.getUuid().replace(/-/g, "");
 }
 
-/* ---------- Scheduled cleanup ---------- */
-
 function expireOldSessions() {
   const sheet = getSheet(SHEET_SESSIONS);
   const data = sheet.getDataRange().getValues();
@@ -490,8 +515,6 @@ function expireOldSessions() {
     }
   }
 }
-
-/* ---------- One-time setup ---------- */
 
 function setupSheets() {
   const ss = getSpreadsheet();
@@ -527,15 +550,38 @@ function createSheetIfMissing(ss, name, headers) {
   }
 }
 
-/* ---------- Output helper ---------- */
-
 function jsonOut(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
 ## End of google apps script
 
+## Recently completed (this session)
+- Fixed Google Sign-In button render race conditions on both login page (auth.js retry guard) and create page (initGoogleSignIn defined before external script loads).
+- Fixed real duplicate-declaration bugs in Code.gs and sheets.js that were silently breaking chat attachments.
+- Added loadApps/loadChat combined actions to cut round trips (speed).
+- Chat: diff-based rendering (no animation replay on poll), optimistic instant-send with per-message upload status tag, concurrent sends supported (each capture-and-clear own pending file).
+- Link detection in chat now works without needing http(s):// prefix (heuristic: whitespace-delimited token containing a dot with non-space on both sides of it).
+- "Slow Mode Is On" label added (cosmetic only, no real throttling — user wants it fast).
+- Nav menu (hamburger, top-right on apps/FNAF/competitions/chat) now has 4 items in a curved fan (not a straight stack): chat(blue), home(red), competition(yellow), dms(green, NEW). Added .navHoverZone invisible div so mouse can move across the gap between button and items without the menu flickering closed.
+- Chat page has a DMs/GC toggle button next to the title (green pill, sized to text). Clicking swaps between the real chat view and a DMs placeholder view. The nav menu's green DM icon on any page navigates to /home/chat?dm=1 which auto-opens the DM view.
+- Create-account page: green checkmark badge on successful Google sign-in, NEW red "Wrong Domain" badge (white circle, black cross) if the signed-in email isn't @imberhorne.co.uk — checked client-side by decoding the JWT payload (no server round trip needed for this immediate feedback). Toast notification "Successfully Requested" added on submit, matching the games toast style.
+- Guest page rewritten to match user's requested copy (benefits bullet list), typo-free.
+- Game click logging added: clicking any game pill on /home/apps or /home/apps/FNAF now calls Sheets.log("GAME_CLICK", gameName) so it shows up in the Logs sheet.
 
+## Pending / next steps (large, not yet built)
+DMs full backend — this is the big remaining item. User's exact spec, paraphrased:
+- Add contact by school number (6-digit, format xxxxxx@imberhorne.co.uk) or by username.
+- Add by number: target gets notified of the request; requester is NEVER told whether that number belongs to a real registered user (privacy) — show them exactly: "If xxxxxx is registered on Here pookies 😘💕 they will have to accept your DM request for you to see if they are a user or not."
+- Add by username: requester CAN see if that username exists (usernames are effectively public/searchable). Either party can then separately propose sharing phone-number-equivalent (school number) with the other — but this requires BOTH people to consent, not just one.
+- Same idea in reverse: if connected via number, either side can propose sharing usernames, again mutual consent required.
+- DMs support text, links, and images only — explicitly NO videos (unlike GC).
+- Needs new sheet(s), likely: DM Requests (or Contacts) tracking pending/accepted state per pair, and DM Messages (per-conversation). Needs careful design so the "don't reveal if a number is registered" privacy rule is enforced server-side (never client-side only).
+- This deserves its own focused session — don't half-build it under time pressure, the privacy requirement especially needs to be airtight server-side.
 
+Other smaller open items:
+- Video upload speed: inherently limited by Apps Script + Drive + base64 overhead for large files. No good fix found yet beyond the upload-status indicator already added. Could investigate client-side compression before upload if this remains a pain point.
+- reactToMessage exists server-side (LoveCount/HeartCount columns already in Chat Messages sheet) but nothing on the frontend calls it yet — the reaction UI from the original chat mockup (4 emoji-count style) was never built. Ask the user if they still want this before building it.
+- Sensible to eventually add appsscript.json explicit oauthScopes (drive, script.external_request) so future scope-expansions don't require manual re-authorization surprises — not done yet, current approach is manual re-auth via running a function once.
 
 ## Small tasks to do next prompt:
