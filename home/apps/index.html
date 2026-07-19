@@ -141,20 +141,12 @@ toast.classList.remove("show");
 
 }
 
-async function loadGames(){
+function renderGames(games){
 
 const grid=document.getElementById("appsGrid");
 grid.innerHTML="";
 
-const result=await Sheets.getGames();
-
-if(!result.success){
-
-return;
-
-}
-
-result.games.forEach(game=>{
+games.forEach(game=>{
 
 const button=document.createElement("button");
 button.className="pill pill-blue";
@@ -184,20 +176,23 @@ window.addEventListener("load",async()=>{
 
 const loading=document.getElementById("loading");
 
-const allowed=await Security.protect();
+const result=await Sheets.loadApps();
 
-if(!allowed)return;
+if(!result.success){
 
-const user=await Security.getUser();
-
-if(user){
-
-document.getElementById("email").textContent=user.email;
-document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
+SessionManager.destroy();
+window.location.replace(CONFIG.ROUTES.LOGIN);
+return;
 
 }
 
-await loadGames();
+document.getElementById("email").textContent=result.user.email;
+document.getElementById("role").textContent=CONFIG.ROLE_NAMES[result.user.role];
+
+renderGames(result.games);
+
+SessionManager.startWatcher();
+Logger.page(window.location.pathname);
 
 loading.classList.add("hidden");
 
