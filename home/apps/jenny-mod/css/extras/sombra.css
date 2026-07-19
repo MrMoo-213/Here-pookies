@@ -1,0 +1,46 @@
+#sombra-contenedor {
+  width: 140px;
+  height: 140px;
+  position: absolute;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: rotateX(90deg) translateZ(-70px) translateX(8px);
+}
+
+#sombra {
+  width: 150px;
+  height: 150px;
+  background-color: rgba(0, 0, 0, 0.263);
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+.sombra--animando {
+  animation: sombra-animando 0.4s infinite alternate;
+}
+
+.sombra--aterrizando {
+  animation: sombra-aterrizando 0.4s forwards;
+}
+
+@keyframes sombra-animando {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(0.6);
+  }
+}
+
+@keyframes sombra-aterrizando {
+  0% {
+    transform: scale(0.6);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}

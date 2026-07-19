@@ -1,0 +1,55 @@
+.temaFondo1 {
+  --fondo: linear-gradient(#ffb648, #ff5d5d);
+  --letra2: rgb(255, 255, 255);
+  --letra2: rgb(10, 45, 220);
+}
+
+.temaFondo2 {
+  --fondo: linear-gradient(rgb(210, 255, 142), rgb(85, 255, 90));
+  --letra2: rgb(0, 29, 172);
+}
+
+.temaFondo3 {
+  --fondo: linear-gradient(#d4c9ff, rgb(137, 145, 255));
+  --letra2: rgb(0, 29, 172);
+}
+
+.temaPersonaje1 {
+  --avatar: url('/assets/avatar/skin1.png'), url('/MnCraft/assets/avatar/skin1.png');
+}
+
+.temaPersonaje2 {
+  --avatar: url('/assets/avatar/skin2.png'), url('/MnCraft/assets/avatar/skin2.png');
+}
+
+.temaPersonaje3 {
+  --avatar: url('/assets/avatar/skin3.png'), url('/MnCraft/assets/avatar/skin3.png');
+}
+
+.temaPersonaje4 {
+  --avatar: url('/assets/avatar/skin4.png'), url('/MnCraft/assets/avatar/skin4.png');
+}
+
+.temaPersonaje5 {
+  --avatar: url('/assets/avatar/skin5.png'), url('/MnCraft/assets/avatar/skin5.png');
+}
+
+.temaPersonaje6 {
+  --avatar: url('/assets/avatar/skin6.png'), url('/MnCraft/assets/avatar/skin6.png');
+}
+
+.temaPersonaje7 {
+  --avatar: url('/assets/avatar/skin7.png'), url('/MnCraft/assets/avatar/skin7.png');
+}
+
+.temaPersonaje8 {
+  --avatar: url('/assets/avatar/skin8.png'), url('/MnCraft/assets/avatar/skin8.png');
+}
+
+.temaPersonaje9 {
+  --avatar: url('/assets/avatar/skin9.png'), url('/MnCraft/assets/avatar/skin9.png');
+}
+
+.temaPersonaje10 {
+  --avatar: url('/assets/avatar/skin10.png'), url('/MnCraft/assets/avatar/skin10.png');
+}

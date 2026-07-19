@@ -1,0 +1,135 @@
+@import './temas.css';
+@import './footer.css';
+
+@import './posicionamiento/cabeza.css';
+@import './posicionamiento/tronco.css';
+@import './posicionamiento/brazo-derecho.css';
+@import './posicionamiento/brazo-izquierdo.css';
+@import './posicionamiento/pierna-derecha.css';
+@import './posicionamiento/pierna-izquierda.css';
+
+@import './movimientos/caminando.css';
+@import './movimientos/agachado.css';
+@import './movimientos/dap.css';
+@import './movimientos/saltando.css';
+
+@import './extras/sombra.css';
+@import './extras/brujula.css';
+@import './extras/caja-movimientos.css';
+
+@import './coloreado/brazo-derecho.css';
+@import './coloreado/brazo-izquierdo.css';
+@import './coloreado/pierna-derecha.css';
+@import './coloreado/pierna-izquierda.css';
+@import './coloreado/cabeza.css';
+@import './coloreado/tronco.css';
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+}
+
+#body {
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  background: linear-gradient(to top, #A6C4FF 80%, #b7cfff 83%, #90aaff 90%, #6C8FFF 100%);
+}
+
+/* PIESA PARA REFERENCIAS */
+/* el centro de este cuadrado es el punto X:0 ; Y:0 */
+/* el ancho y alto se modifica automaticamente */
+#contenedor3d {
+  transform-style: preserve-3d;
+  /* es para girar las perspectiva, y mantener la profundidad */
+  /* transform: perspective(100vw) rotateX(-25deg) rotateY(-35deg); */
+  /* transform: perspective(100vw) rotateX(-10deg) rotateY(-35deg); */
+  transform: perspective(100vh) rotateX(-10deg) rotateY(-15deg);
+  /* para centrar el contenedor 3D en el viewport */
+  top: 50%;
+  left: 50%;
+  position: absolute;
+
+  /* background-color: rgba(238, 130, 130, 0.347);
+  border: 2px solid red; */
+}
+
+/* PIESA PARA REFERENCIAS */
+#piso {
+  transform-style: preserve-3d;
+
+  width: 160px;
+  height: 160px;
+  transform: rotateX(90deg);
+
+  /* background: rgba(0, 0, 255, 0.382);
+  border: 2px solid blue; */
+}
+
+#cesped {
+  width: 8000px;
+  height: 6000px;
+
+  /* centrar el cesped dentro del piso sin importar el tamaño del piso ni del cesped */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* transform: translateX(-50%) translateY(-50%); */
+  transform: translateX(-65%) translateY(-72%);
+
+  /* agregar la textura de césped */
+  background-image: url('../assets/texturas/grass_carried.png');
+  background-size: 80px 80px;
+  image-rendering: pixelated;
+  border-radius: 50%;
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 100%;
+    pointer-events: none;
+    background: radial-gradient(circle, #ffffff00 0%, #eeeeee00 30%, #2222226e 100%);
+  }
+}
+
+
+/* ELEMENTO STEVE */
+/* ELEMENTO STEVE */
+
+#stevePosicionInicialPlano {
+  transform-style: preserve-3d;
+
+  /* posicionar a STEVE a su posición inicial */
+  position: absolute;
+  top: 0;
+  transform: translateY(-240px);
+}
+
+#steveEjeMovimiento {
+  transform-style: preserve-3d;
+  transition: 0.4s;
+  /* border: 1px solid red; */
+
+  position: absolute;
+  top: 0;
+}
+
+#steveEjeGiro {
+  transform-style: preserve-3d;
+  transition: 0.4s;
+  /* border: 1px solid blue; */
+}
+
+#steve {
+  transform-style: preserve-3d;
+  width: 160px;
+  height: 320px;
+  /* border: 1px solid green; */
+  /* background: rgba(0, 128, 0, 0.146); */
+}
+
+/* ELEMENTO CUBO */
+/* ELEMENTO CUBO */

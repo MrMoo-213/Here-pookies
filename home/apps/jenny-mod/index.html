@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="author" content="Jaen Figueroa" />
+    <meta
+      name="description"
+      content="Personaje de Minecraft hecho con HTML, CSS y JavaScript"
+    />
+    <meta
+      name="keywords"
+      content="html, css, javascript, portafolio, jaencraft, 3d, animaciones, jugar"
+    />
+    <meta name="robots" content="index, follow" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Minecraft Demo</title>
+    <!-- CSS -->
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- JavaScript -->
+    <script src="js/variables.js" defer></script>
+    <script src="js/main.js" defer></script>
+    <script src="js/temas.js" defer></script>
+
+    <script src="js/utils/acciones-en-curso.js" defer></script>
+
+    <script src="js/movimientos/girar.js" defer></script>
+    <script src="js/movimientos/avanzar.js" defer></script>
+    <!-- <script src="js/movimientos/moverPlano.js" defer></script> -->
+
+    <script src="js/gestos/moverBrazos.js" defer></script>
+    <script src="js/gestos/moverPiernas.js" defer></script>
+    <script src="js/gestos/saltar.js" defer></script>
+    <script src="js/gestos/agacharse.js" defer></script>
+    <script src="js/gestos/dap.js" defer></script>
+
+    <script src="js/extras/brujula.js" defer></script>
+    <script src="js/extras/animar-sombra.js" defer></script>
+
+    <!-- <script src="js/utils/modificarPerspectivaArrastrando.js" defer></script> -->
+
+    <script src="js/key-events.js" defer></script>
+    <script src="js/key-events-controller.js" defer></script>
+
+    <!-- <script src="js/video.js" defer></script> -->
+  </head>
+
+  <body id="body" class="">
+    <section id="contenedor3d">
+      <!-- PISO -->
+      <section id="piso">
+        <div id="cesped"></div>
+      </section>
+
+      <!-- PERSONAJE -->
+      <section id="stevePosicionInicialPlano">
+        <section id="steveEjeMovimiento">
+          <section id="steveEjeGiro">
+            <div id="steve" class="">
+              <div id="cabeza">
+                <div class="frente"></div>
+                <div class="izquierda"></div>
+                <div class="detras"></div>
+                <div class="derecha"></div>
+                <div class="arriba"></div>
+                <div class="abajo"></div>
+              </div>
+              <div id="tronco">
+                <div class="frente"></div>
+                <div class="izquierda"></div>
+                <div class="detras"></div>
+                <div class="derecha"></div>
+                <div class="arriba"></div>
+                <div class="abajo"></div>
+              </div>
+              <div id="brazo-izquierdo">
+                <div class="frente"></div>
+                <div class="izquierda"></div>
+                <div class="detras"></div>
+                <div class="derecha"></div>
+                <div class="arriba"></div>
+                <div class="abajo"></div>
+              </div>
+              <div id="brazo-derecho">
+                <div class="frente"></div>
+                <div class="izquierda"></div>
+                <div class="detras"></div>
+                <div class="derecha"></div>
+                <div class="arriba"></div>
+                <div class="abajo"></div>
+              </div>
+              <div id="pierna-izquierda">
+                <div class="frente"></div>
+                <div class="izquierda"></div>
+                <div class="detras"></div>
+                <div class="derecha"></div>
+                <div class="arriba"></div>
+                <div class="abajo"></div>
+              </div>
+              <div id="pierna-derecha">
+                <div class="frente"></div>
+                <div class="izquierda"></div>
+                <div class="detras"></div>
+                <div class="derecha"></div>
+                <div class="arriba"></div>
+                <div class="abajo"></div>
+              </div>
+            </div>
+            <div id="sombra-contenedor">
+              <div id="sombra"></div>
+            </div>
+          </section>
+        </section>
+      </section>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <article id="caja-movimientos">
+        <ol>
+          <li>Caminar: <b>W, A, S, D</b></li>
+          <li>Saltar: <b>Barra de espacio</b></li>
+          <li>Agacharte: <b>Shift / Mayus</b></li>
+          <li>Dap: <b>G</b></li>
+          <li>Cambiar skin: <b>K</b></li>
+          <li>Cambiar fondo: <b>L</b></li>
+        </ol>
+      </article>
+
+      <section class="contenedor-brujula">
+        <div id="brujula">
+          <span id="flecha"></span>
+          <div class="contenedor-letras">
+            <div>
+              <p id="letraA">A</p>
+              <p id="letraS">S</p>
+            </div>
+            <div>
+              <p id="letraW">W</p>
+              <p id="letraD">D</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </footer>
+  </body>
+</html>
