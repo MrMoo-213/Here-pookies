@@ -98,11 +98,43 @@ return await this.request("getGames");
 
 }
 
+static async loadApps(){
+
+return await this.request("loadApps");
+
+}
+
 static async requestGame(name,url){
 
 return await this.request("requestGame",{
 name,
 url
+});
+
+}
+
+static async getMessages(){
+
+return await this.request("getMessages");
+
+}
+
+static async sendMessage(message,link,imageBase64,imageMimeType){
+
+return await this.request("sendMessage",{
+message,
+link,
+imageBase64,
+imageMimeType
+});
+
+}
+
+static async reactToMessage(rowId,emoji){
+
+return await this.request("reactToMessage",{
+rowId,
+emoji
 });
 
 }
