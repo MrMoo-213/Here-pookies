@@ -120,6 +120,35 @@ display:flex;
 justify-content:center;
 }
 
+.signedInBadge{
+width:100%;
+max-width:320px;
+height:40px;
+background:#28b44b;
+color:#fff;
+border-radius:20px;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:8px;
+font-weight:600;
+font-size:14px;
+animation:SlideUp .25s ease;
+}
+
+.signedInBadge .tick{
+width:20px;
+height:20px;
+border-radius:50%;
+background:#fff;
+color:#28b44b;
+font-size:12px;
+font-weight:900;
+display:flex;
+align-items:center;
+justify-content:center;
+}
+
 #error{
 min-height:24px;
 max-width:360px;
