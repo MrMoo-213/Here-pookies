@@ -104,6 +104,21 @@ return await this.request("loadApps");
 
 }
 
+static async requestGame(name,url){
+
+return await this.request("requestGame",{
+name,
+url
+});
+
+}
+
+static async loadChat(){
+
+return await this.request("loadChat");
+
+}
+
 static async getMessages(){
 
 return await this.request("getMessages");
@@ -126,32 +141,6 @@ return await this.request("uploadAttachment",{
 filename,
 mimeType,
 base64Data
-});
-
-}
-
-static async requestGame(name,url){
-
-return await this.request("requestGame",{
-name,
-url
-});
-
-}
-
-static async getMessages(){
-
-return await this.request("getMessages");
-
-}
-
-static async sendMessage(message,link,imageBase64,imageMimeType){
-
-return await this.request("sendMessage",{
-message,
-link,
-imageBase64,
-imageMimeType
 });
 
 }
