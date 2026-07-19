@@ -62,6 +62,10 @@ Chat
 
 </div>
 
+<div class="slowModeLabel">
+Slow Mode Is On
+</div>
+
 <div class="chatInputBar">
 
 <button class="attachButton" id="attachButton" aria-label="Attach">
@@ -114,6 +118,8 @@ Send
 
 let pendingFile=null;
 let pendingFileType=null;
+let currentUser=null;
+let confirmedCount=0;
 
 function linkify(text){
 
@@ -122,20 +128,31 @@ const escaped=text
 .replace(/</g,"&lt;")
 .replace(/>/g,"&gt;");
 
-return escaped.replace(/(https?:\/\/[^\s]+)/g,url=>{
+return escaped.replace(/\S+/g,token=>{
 
-return "<a href=\""+url+"\" target=\"_blank\" rel=\"noopener\">"+url+"</a>";
+if(/^https?:\/\//i.test(token)){
+
+return "<a href=\""+token+"\" target=\"_blank\" rel=\"noopener\">"+token+"</a>";
+
+}
+
+const dotIndex=token.indexOf(".");
+
+if(dotIndex>0&&dotIndex<token.length-1&&/^[^\s]+\.[^\s]+$/.test(token)){
+
+const href="https://"+token;
+
+return "<a href=\""+href+"\" target=\"_blank\" rel=\"noopener\">"+token+"</a>";
+
+}
+
+return token;
 
 });
 
 }
 
-function renderMessages(messages){
-
-const container=document.getElementById("chatMessages");
-container.innerHTML="";
-
-messages.forEach(msg=>{
+function buildMessageBubble(msg){
 
 const bubble=document.createElement("div");
 bubble.className="chatMessage";
@@ -173,21 +190,44 @@ bubble.appendChild(img);
 
 }
 
-container.appendChild(bubble);
+return bubble;
 
-});
+}
 
+function appendMessage(msg){
+
+const container=document.getElementById("chatMessages");
+container.appendChild(buildMessageBubble(msg));
 container.scrollTop=container.scrollHeight;
 
 }
 
-async function loadMessages(){
+function renderInitialMessages(messages){
+
+const container=document.getElementById("chatMessages");
+container.innerHTML="";
+
+messages.forEach(msg=>{
+
+container.appendChild(buildMessageBubble(msg));
+
+});
+
+container.scrollTop=container.scrollHeight;
+confirmedCount=messages.length;
+
+}
+
+async function pollMessages(){
 
 const result=await Sheets.getMessages();
 
-if(result.success){
+if(!result.success)return;
 
-renderMessages(result.messages);
+if(result.messages.length>confirmedCount){
+
+result.messages.slice(confirmedCount).forEach(appendMessage);
+confirmedCount=result.messages.length;
 
 }
 
@@ -197,15 +237,23 @@ window.addEventListener("load",async()=>{
 
 const loading=document.getElementById("loading");
 
-const allowed=await Security.protect();
+const result=await Sheets.loadChat();
 
-if(!allowed)return;
+if(!result.success){
 
-await loadMessages();
+SessionManager.destroy();
+window.location.replace(CONFIG.ROUTES.LOGIN);
+return;
+
+}
+
+currentUser=result.user;
+
+renderInitialMessages(result.messages);
 
 loading.classList.add("hidden");
 
-setInterval(loadMessages,5000);
+setInterval(pollMessages,5000);
 
 });
 
@@ -319,26 +367,52 @@ reader.readAsDataURL(file);
 
 }
 
-document.getElementById("sendButton").addEventListener("click",async()=>{
+async function handleSend(){
 
 const input=document.getElementById("chatInput");
 const text=input.value.trim();
 
 if(!text&&!pendingFile)return;
 
-const sendButton=document.getElementById("sendButton");
-sendButton.disabled=true;
+const fileToSend=pendingFile;
+const fileTypeHint=pendingFileType;
+
+input.value="";
+pendingFile=null;
+pendingFileType=null;
+fileInput.value="";
+document.getElementById("attachPreview").classList.add("hidden");
+
+let optimisticAttachmentUrl="";
+let optimisticAttachmentType="";
+
+if(fileToSend){
+
+optimisticAttachmentUrl=URL.createObjectURL(fileToSend);
+optimisticAttachmentType=fileTypeHint;
+
+}
+
+appendMessage({
+username:currentUser.username,
+role:currentUser.role,
+message:text,
+attachmentUrl:optimisticAttachmentUrl,
+attachmentType:optimisticAttachmentType
+});
+
+confirmedCount++;
 
 let attachmentUrl="";
 let attachmentType="";
 
-if(pendingFile){
+if(fileToSend){
 
-const base64Data=await fileToBase64(pendingFile);
+const base64Data=await fileToBase64(fileToSend);
 
 const uploadResult=await Sheets.uploadAttachment(
-pendingFile.name,
-pendingFile.type,
+fileToSend.name,
+fileToSend.type,
 base64Data
 );
 
@@ -347,29 +421,29 @@ if(uploadResult.success){
 attachmentUrl=uploadResult.url;
 attachmentType=uploadResult.type;
 
+}else{
+
+alert("Attachment failed to upload: "+(uploadResult.message||"unknown error"));
+
 }
 
 }
+
+if(text||attachmentUrl){
 
 await Sheets.sendMessage(text,attachmentUrl,attachmentType);
 
-input.value="";
-pendingFile=null;
-pendingFileType=null;
-fileInput.value="";
-document.getElementById("attachPreview").classList.add("hidden");
+}
 
-await loadMessages();
+}
 
-sendButton.disabled=false;
-
-});
+document.getElementById("sendButton").addEventListener("click",handleSend);
 
 document.getElementById("chatInput").addEventListener("keydown",e=>{
 
 if(e.key==="Enter"){
 
-document.getElementById("sendButton").click();
+handleSend();
 
 }
 
