@@ -104,6 +104,32 @@ return await this.request("loadApps");
 
 }
 
+static async getMessages(){
+
+return await this.request("getMessages");
+
+}
+
+static async sendMessage(message,attachmentUrl,attachmentType){
+
+return await this.request("sendMessage",{
+message,
+attachmentUrl,
+attachmentType
+});
+
+}
+
+static async uploadAttachment(filename,mimeType,base64Data){
+
+return await this.request("uploadAttachment",{
+filename,
+mimeType,
+base64Data
+});
+
+}
+
 static async requestGame(name,url){
 
 return await this.request("requestGame",{
