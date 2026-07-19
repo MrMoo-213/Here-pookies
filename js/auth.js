@@ -2,6 +2,13 @@ class Auth{
 
 static initialise(){
 
+if(typeof google==="undefined"||!google.accounts){
+
+setTimeout(()=>Auth.initialise(),50);
+return;
+
+}
+
 google.accounts.id.initialize({
 client_id:CONFIG.CLIENT_ID,
 callback:this.googleCallback.bind(this),
