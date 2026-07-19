@@ -447,6 +447,12 @@ margin-top:10px;
 display:block;
 }
 
+.slowModeLabel{
+font-size:12px;
+color:#777;
+padding:0 30px 8px;
+}
+
 .chatInputBar{
 display:flex;
 align-items:center;
