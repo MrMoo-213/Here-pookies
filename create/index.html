@@ -50,6 +50,11 @@ width:320
 <div class="spinner"></div>
 </div>
 
+<div class="toast" id="toast">
+<span class="tick">✓</span>
+<span id="toastText">Successfully Requested</span>
+</div>
+
 <div class="page">
 
 <div class="card">
@@ -80,6 +85,11 @@ If so ask them, don't fill this out.
 <div class="signedInBadge hidden" id="googleSignedIn">
 <span class="tick">✓</span>
 Signed in with Google
+</div>
+
+<div class="wrongDomainBadge hidden" id="wrongDomainBadge">
+<span class="cross">✕</span>
+Wrong Domain
 </div>
 
 <label for="usernameInput">Choose a username:</label>
@@ -124,12 +134,58 @@ Back
 
 let pendingIdToken=null;
 
+function decodeJwtPayload(token){
+
+try{
+
+const payload=token.split(".")[1];
+const decoded=atob(payload.replace(/-/g,"+").replace(/_/g,"/"));
+
+return JSON.parse(decoded);
+
+}catch{
+
+return null;
+
+}
+
+}
+
 function handleGoogleSignIn(response){
 
-pendingIdToken=response.credential;
+const claims=decodeJwtPayload(response.credential);
+const email=claims&&claims.email?claims.email.toLowerCase():"";
 
 document.getElementById("googleButton").classList.add("hidden");
+
+if(email.endsWith("@imberhorne.co.uk")){
+
+pendingIdToken=response.credential;
+document.getElementById("wrongDomainBadge").classList.add("hidden");
 document.getElementById("googleSignedIn").classList.remove("hidden");
+
+}else{
+
+pendingIdToken=null;
+document.getElementById("googleSignedIn").classList.add("hidden");
+document.getElementById("wrongDomainBadge").classList.remove("hidden");
+
+}
+
+}
+
+function showToast(message){
+
+const toast=document.getElementById("toast");
+document.getElementById("toastText").textContent=message;
+
+toast.classList.add("show");
+
+setTimeout(()=>{
+
+toast.classList.remove("show");
+
+},3000);
 
 }
 
@@ -171,6 +227,8 @@ return;
 
 document.getElementById("stageForm").classList.add("hidden");
 document.getElementById("stageDone").classList.remove("hidden");
+
+showToast("Successfully Requested");
 
 });
 
