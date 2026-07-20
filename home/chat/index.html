@@ -112,17 +112,72 @@ Send
 
 </div>
 
-<div class="comingSoon hidden" id="dmsView">
+<div class="chatArea hidden" id="dmsView">
 
-<div>
+<div id="dmsListView">
 
-<h1>
-DMs are on the way
-</h1>
+<div class="dmAddBar">
 
-<p class="dmsNote">
-Adding people by school number or username, request/accept, and privacy controls are being built next. This view is a placeholder for now.
-</p>
+<div class="dmMethodToggle">
+
+<button class="dmMethodBtn active" id="dmMethodNumber">Number</button>
+<button class="dmMethodBtn" id="dmMethodUsername">Username</button>
+
+</div>
+
+<input type="text" class="chatInput" id="dmIdentifierInput" placeholder="6-digit school number">
+
+<button class="button create small" id="dmAddButton">Add</button>
+
+</div>
+
+<p class="dmsNote" id="dmStatusMessage"></p>
+
+<div id="dmRequestsList"></div>
+
+<div id="dmContactsList"></div>
+
+</div>
+
+<div class="dmThreadView hidden" id="dmThreadView">
+
+<div class="dmThreadHeader">
+
+<button class="menuButton" id="dmBackButton">←</button>
+
+<span id="dmThreadTitle"></span>
+
+<button class="dmShareButton" id="dmShareButton"></button>
+
+</div>
+
+<div class="chatMessages" id="dmMessages">
+
+</div>
+
+<div class="chatInputBar">
+
+<button class="attachButton" id="dmAttachButton" aria-label="Attach">
+＋
+</button>
+
+<input type="file" id="dmFileInput" accept="image/*" hidden>
+
+<div class="attachPreview hidden" id="dmAttachPreview">
+
+<img id="dmPreviewImage">
+
+<button id="dmRemoveAttachmentButton">✕</button>
+
+</div>
+
+<input type="text" class="chatInput" id="dmInput" placeholder="Type Here...">
+
+<button class="sendButton" id="dmSendButton">
+Send
+</button>
+
+</div>
 
 </div>
 
@@ -198,10 +253,24 @@ if(msg.attachmentUrl){
 
 if(msg.attachmentType==="video"){
 
+if(msg.attachmentUrl.indexOf("blob:")===0){
+
 const video=document.createElement("video");
 video.src=msg.attachmentUrl;
 video.controls=true;
 bubble.appendChild(video);
+
+}else{
+
+const link=document.createElement("a");
+link.href=msg.attachmentUrl;
+link.target="_blank";
+link.rel="noopener";
+link.className="videoLink";
+link.textContent="▶ Watch video";
+bubble.appendChild(link);
+
+}
 
 }else{
 
@@ -316,6 +385,13 @@ document.getElementById("gcView").classList.toggle("hidden",open);
 document.getElementById("dmsView").classList.toggle("hidden",!open);
 document.getElementById("viewTitle").textContent=open?"DMs":"Chat";
 document.getElementById("dmToggleButton").textContent=open?"GC":"DMs";
+
+if(open){
+
+showDmList();
+loadDmsList();
+
+}
 
 }
 
@@ -519,6 +595,345 @@ document.getElementById("chatInput").addEventListener("keydown",e=>{
 if(e.key==="Enter"){
 
 handleSend();
+
+}
+
+});
+
+let dmMethod="number";
+let openContactId=null;
+let dmPendingFile=null;
+let dmPollInterval=null;
+
+function showDmList(){
+
+document.getElementById("dmsListView").classList.remove("hidden");
+document.getElementById("dmThreadView").classList.add("hidden");
+
+if(dmPollInterval){
+
+clearInterval(dmPollInterval);
+dmPollInterval=null;
+
+}
+
+openContactId=null;
+
+}
+
+document.getElementById("dmMethodNumber").addEventListener("click",()=>{
+
+dmMethod="number";
+document.getElementById("dmMethodNumber").classList.add("active");
+document.getElementById("dmMethodUsername").classList.remove("active");
+document.getElementById("dmIdentifierInput").placeholder="6-digit school number";
+
+});
+
+document.getElementById("dmMethodUsername").addEventListener("click",()=>{
+
+dmMethod="username";
+document.getElementById("dmMethodUsername").classList.add("active");
+document.getElementById("dmMethodNumber").classList.remove("active");
+document.getElementById("dmIdentifierInput").placeholder="Username";
+
+});
+
+document.getElementById("dmAddButton").addEventListener("click",async()=>{
+
+const input=document.getElementById("dmIdentifierInput");
+const value=input.value.trim();
+
+if(!value)return;
+
+const statusBox=document.getElementById("dmStatusMessage");
+statusBox.textContent="Sending...";
+
+const result=await Sheets.sendDmRequest(dmMethod,value);
+
+statusBox.textContent=result.message||(result.success?"Done.":"Something went wrong.");
+
+if(result.success){
+
+input.value="";
+
+}
+
+loadDmsList();
+
+});
+
+async function loadDmsList(){
+
+const result=await Sheets.loadDms();
+
+if(!result.success)return;
+
+const requestsList=document.getElementById("dmRequestsList");
+requestsList.innerHTML="";
+
+result.requests.forEach(req=>{
+
+const row=document.createElement("div");
+row.className="dmRequestRow";
+
+const label=document.createElement("span");
+label.textContent=req.display+" wants to DM you";
+row.appendChild(label);
+
+const acceptBtn=document.createElement("button");
+acceptBtn.className="button create small";
+acceptBtn.textContent="Accept";
+acceptBtn.addEventListener("click",async()=>{
+
+await Sheets.respondDmRequest(req.requestId,true);
+loadDmsList();
+
+});
+row.appendChild(acceptBtn);
+
+const declineBtn=document.createElement("button");
+declineBtn.className="button guest";
+declineBtn.textContent="Decline";
+declineBtn.addEventListener("click",async()=>{
+
+await Sheets.respondDmRequest(req.requestId,false);
+loadDmsList();
+
+});
+row.appendChild(declineBtn);
+
+requestsList.appendChild(row);
+
+});
+
+const contactsList=document.getElementById("dmContactsList");
+contactsList.innerHTML="";
+
+result.contacts.forEach(contact=>{
+
+const row=document.createElement("button");
+row.className="dmContactRow";
+
+let text=contact.display;
+if(contact.revealedExtra)text+=" ("+contact.revealedExtra+")";
+
+row.textContent=text;
+
+row.addEventListener("click",()=>{
+
+openDmThread(contact);
+
+});
+
+contactsList.appendChild(row);
+
+});
+
+}
+
+function openDmThread(contact){
+
+openContactId=contact.contactId;
+
+document.getElementById("dmsListView").classList.add("hidden");
+document.getElementById("dmThreadView").classList.remove("hidden");
+
+let title=contact.display;
+if(contact.revealedExtra)title+=" ("+contact.revealedExtra+")";
+document.getElementById("dmThreadTitle").textContent=title;
+
+const shareButton=document.getElementById("dmShareButton");
+
+if(contact.shareConsented){
+
+shareButton.textContent="Shared";
+shareButton.disabled=true;
+
+}else if(contact.myConsent){
+
+shareButton.textContent="Waiting for them";
+shareButton.disabled=true;
+
+}else{
+
+shareButton.textContent=contact.method==="number"?"Share username":"Share number";
+shareButton.disabled=false;
+
+}
+
+loadDmMessages();
+
+if(dmPollInterval)clearInterval(dmPollInterval);
+dmPollInterval=setInterval(loadDmMessages,5000);
+
+}
+
+document.getElementById("dmBackButton").addEventListener("click",()=>{
+
+showDmList();
+loadDmsList();
+
+});
+
+document.getElementById("dmShareButton").addEventListener("click",async()=>{
+
+if(!openContactId)return;
+
+await Sheets.requestShareIdentity(openContactId);
+
+const result=await Sheets.loadDms();
+
+if(result.success){
+
+const updated=result.contacts.find(c=>c.contactId===openContactId);
+if(updated)openDmThread(updated);
+
+}
+
+});
+
+function buildDmBubble(msg){
+
+const bubble=document.createElement("div");
+bubble.className="chatMessage"+(msg.fromMe?" dmMine":"");
+
+if(msg.message){
+
+const text=document.createElement("div");
+text.className="text";
+text.innerHTML=linkify(msg.message);
+bubble.appendChild(text);
+
+}
+
+if(msg.attachmentUrl){
+
+const img=document.createElement("img");
+img.src=msg.attachmentUrl;
+bubble.appendChild(img);
+
+}
+
+return bubble;
+
+}
+
+async function loadDmMessages(){
+
+if(!openContactId)return;
+
+const result=await Sheets.getDmMessages(openContactId);
+
+if(!result.success)return;
+
+const container=document.getElementById("dmMessages");
+container.innerHTML="";
+
+result.messages.forEach(msg=>{
+
+container.appendChild(buildDmBubble(msg));
+
+});
+
+container.scrollTop=container.scrollHeight;
+
+}
+
+document.getElementById("dmAttachButton").addEventListener("click",()=>{
+
+document.getElementById("dmFileInput").click();
+
+});
+
+document.getElementById("dmFileInput").addEventListener("change",()=>{
+
+const file=document.getElementById("dmFileInput").files[0];
+if(!file)return;
+
+dmPendingFile=file;
+
+const previewBox=document.getElementById("dmAttachPreview");
+const previewImage=document.getElementById("dmPreviewImage");
+
+previewImage.src=URL.createObjectURL(file);
+previewBox.classList.remove("hidden");
+
+});
+
+document.getElementById("dmRemoveAttachmentButton").addEventListener("click",()=>{
+
+dmPendingFile=null;
+document.getElementById("dmFileInput").value="";
+document.getElementById("dmAttachPreview").classList.add("hidden");
+
+});
+
+async function handleDmSend(){
+
+if(!openContactId)return;
+
+const input=document.getElementById("dmInput");
+const text=input.value.trim();
+
+if(!text&&!dmPendingFile)return;
+
+const fileToSend=dmPendingFile;
+
+input.value="";
+dmPendingFile=null;
+document.getElementById("dmFileInput").value="";
+document.getElementById("dmAttachPreview").classList.add("hidden");
+
+const contactId=openContactId;
+
+const bubble=buildDmBubble({
+fromMe:true,
+message:text,
+attachmentUrl:fileToSend?URL.createObjectURL(fileToSend):""
+});
+
+document.getElementById("dmMessages").appendChild(bubble);
+document.getElementById("dmMessages").scrollTop=document.getElementById("dmMessages").scrollHeight;
+
+let attachmentUrl="";
+let attachmentType="";
+
+if(fileToSend){
+
+const base64Data=await fileToBase64(fileToSend);
+
+const uploadResult=await Sheets.uploadAttachment(
+fileToSend.name,
+fileToSend.type,
+base64Data,
+"dm"
+);
+
+if(uploadResult.success){
+
+attachmentUrl=uploadResult.url;
+attachmentType=uploadResult.type;
+
+}
+
+}
+
+if(text||attachmentUrl){
+
+await Sheets.sendDmMessage(contactId,text,attachmentUrl,attachmentType);
+
+}
+
+}
+
+document.getElementById("dmSendButton").addEventListener("click",handleDmSend);
+
+document.getElementById("dmInput").addEventListener("keydown",e=>{
+
+if(e.key==="Enter"){
+
+handleDmSend();
 
 }
 
