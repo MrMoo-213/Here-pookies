@@ -135,12 +135,13 @@ attachmentType
 
 }
 
-static async uploadAttachment(filename,mimeType,base64Data){
+static async uploadAttachment(filename,mimeType,base64Data,context){
 
 return await this.request("uploadAttachment",{
 filename,
 mimeType,
-base64Data
+base64Data,
+context
 });
 
 }
@@ -150,6 +151,57 @@ static async reactToMessage(rowId,emoji){
 return await this.request("reactToMessage",{
 rowId,
 emoji
+});
+
+}
+
+static async sendDmRequest(method,identifier){
+
+return await this.request("sendDmRequest",{
+method,
+identifier
+});
+
+}
+
+static async loadDms(){
+
+return await this.request("loadDms");
+
+}
+
+static async respondDmRequest(requestId,accept){
+
+return await this.request("respondDmRequest",{
+requestId,
+accept
+});
+
+}
+
+static async requestShareIdentity(contactId){
+
+return await this.request("requestShareIdentity",{
+contactId
+});
+
+}
+
+static async getDmMessages(contactId){
+
+return await this.request("getDmMessages",{
+contactId
+});
+
+}
+
+static async sendDmMessage(contactId,message,attachmentUrl,attachmentType){
+
+return await this.request("sendDmMessage",{
+contactId,
+message,
+attachmentUrl,
+attachmentType
 });
 
 }
