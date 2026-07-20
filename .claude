@@ -12,6 +12,8 @@ School-restricted website (Imberhorne school, domain imberhorne.co.uk). Frontend
 - Spreadsheet ID is baked directly into Code.gs (const SPREADSHEET_ID). Current ID: 1iB9auDG4m-_ziFl15h_yvJGQ0NQS2oQ9SvcxVX14uf0
 - After ANY Code.gs change: paste into Apps Script editor, then Deploy -> Manage deployments -> edit (pencil) -> Version: New -> Deploy. Saving alone does NOT update the live /exec endpoint.
 - If Code.gs gains a new Google API usage (e.g. DriveApp), the script owner must manually re-authorize: select the relevant no-arg function in the Apps Script dropdown (e.g. getOrCreateChatFolder), Run it, approve the permission prompt, then redeploy.
+- Google Drive does NOT reliably serve files for direct <img>/<video> embedding via the old "uc?export=view" URL — use "https://lh3.googleusercontent.com/d/FILEID" for images (works for direct embedding), and for video just link out to "https://drive.google.com/file/d/FILEID/view" instead of embedding (Drive doesn't support inline video playback reliably — no proper range requests). Frontend renders video attachments as a "Watch video" link, not an inline <video> tag, once persisted (local blob: URLs during upload are still shown inline for preview).
+- CSS gotcha learned the hard way: avoid nesting a second position:absolute element (e.g. a wrapper div) between a position:relative container and the elements you're trying to position absolutely relative to that container — the wrapper becomes its own containing block and silently breaks the intended positioning math. Keep positioning contexts as flat/shallow as possible.
 
 ## Routes (js/config.js CONFIG.ROUTES)
 - / — login page (index.html)
@@ -19,25 +21,47 @@ School-restricted website (Imberhorne school, domain imberhorne.co.uk). Frontend
 - /home/apps — games list, dynamic from Games sheet
 - /home/apps/FNAF — hardcoded FNAF sub-games, no sheet dependency
 - /home/competitions — coming soon placeholder
-- /home/chat — chat (GC) + DMs toggle (DMs is UI-only placeholder currently, see Pending below)
+- /home/chat — chat (GC) + DMs toggle, full DM system now built (see below)
 - /guest — public "coming soon" benefits page, no auth
 - /create — request-account flow (3 stages: warning -> google signin + username -> confirmation)
 - /404.html — GitHub Pages 404
 
 ## Google Sheets structure
 1. Users: Email, Username, Role (0=User,1=Admin,2=Manager,3=Creator), Active (TRUE gates login)
-2. Logs: Timestamp, Email, Action, Details, IP (IP always blank — Apps Script web apps can't see client IP)
+2. Logs: Timestamp, Email, Action, Details, IP (IP always blank — Apps Script web apps can't see client IP). GAME_CLICK actions now logged when a user clicks any game on /apps or /apps/FNAF.
 3. Account Requests: Timestamp, Email, Name, Status
 4. Active Sessions: Token, Email, Created, Expires, IP
 5. Games: Name, URL, Internal (1=internal path like home/apps/x, 0=external full URL), Rating (0 default, unused so far)
 6. Game Requests: Timestamp, Email, Name, URL (dedup by URL, silently ignored if duplicate)
 7. Chat Messages: Timestamp, Email, Username, Role, Message, AttachmentURL, AttachmentType, LoveCount, HeartCount (last 2 unused by frontend currently, reactToMessage action exists server-side but nothing calls it yet)
+8. DM Requests: Timestamp, FromEmail, ToEmail, Method (number/username), Status (pending/accepted/declined)
+9. DM Contacts: Timestamp, UserA, UserB, Method (the method originally used to connect them), ShareConsentA, ShareConsentB (both must be true before the "other" identifier is revealed to both sides)
+10. DM Messages: Timestamp, ContactId (row number in DM Contacts), FromEmail, Message, AttachmentURL, AttachmentType (images only, video blocked server-side even if somehow sent from client)
 
 ## Backend actions (doPost, Code.gs)
-login, validateSession, getUser, getRole, logout, log, requestAccount, heartbeat, getGames, loadApps (combined session+user+games, used by /apps to cut round trips), requestGame, loadChat (combined session+user+messages, used by /chat), getMessages, sendMessage, uploadAttachment (saves to Drive folder "Here Pookies Chat Uploads", returns viewable URL), reactToMessage (exists, unused by frontend).
+login, validateSession, getUser, getRole, logout, log, requestAccount, heartbeat, getGames, loadApps, requestGame, loadChat, getMessages, sendMessage, uploadAttachment (now takes a context param: pass "dm" to block video uploads), reactToMessage (unused by frontend still), sendDmRequest, loadDms, respondDmRequest, requestShareIdentity, getDmMessages, sendDmMessage.
 
-## Current Code.gs (authoritative, paste this exact file into Apps Script)
+## DM system design (privacy rules — read carefully before changing)
+- Add by NUMBER (6-digit, xxxxxx@imberhorne.co.uk): requester NEVER learns if that number belongs to a real/active user. Response message is IDENTICAL regardless of whether the number exists: "If xxxxxx is registered on Here pookies (emoji) they will have to accept your DM request for you to see if they are a user or not." This is enforced server-side in handleSendDmRequest — do not change this to leak existence info.
+- Add by USERNAME: requester CAN see if the username exists (returns an explicit "no user found" error if not — this is intentional, usernames are not considered sensitive).
+- Whichever identifier (number or username) was used to establish the contact becomes visible to BOTH parties automatically once accepted (makes sense — the requester already had to know it to send the request, and the recipient sees it on the incoming request so they know who's asking).
+- The OTHER identifier stays hidden until BOTH people separately click "share" (ShareConsentA and ShareConsentB both true) — handleRequestShareIdentity just sets the caller's own flag; reveal happens automatically once both are true, computed at read-time in getDmContactsList, nothing is written to the "revealed" state — it's derived live from the two consent booleans every time.
+- DM attachments are images only (frontend file input uses accept="image/*", no video option in the DM attach flow at all, and the backend independently rejects any video mimeType passed with context="dm" as defense in depth).
+- Group chat (GC) still allows video, unaffected by the DM restriction.
 
+## Recently completed (this session)
+- Fixed the broken-image-on-refresh bug: switched image URL format to lh3.googleusercontent.com/d/, switched video to a "Watch video" link instead of a broken inline <video> tag for persisted messages (local blob preview during upload is unaffected, still shows inline).
+- Fixed a genuinely broken nav-menu CSS layout (icons rendering scattered near the top of the page instead of fanning from the button) — root cause was likely a nested position:absolute wrapper creating an unintended containing block. Rebuilt using a flat flex-column with per-item margin-right staggering (a diagonal "staircase" curve) instead of fragile manual top/right math per item. Much more robust, test this again after deploy and report back if it's still off.
+- Built the full DM system: request/accept flow, privacy-preserving number lookup vs public username lookup, mutual-consent identity reveal, 1:1 threaded messaging, image-only attachments. See "DM system design" above for the exact rules — this was carefully spec'd by the user, don't casually change the privacy behavior.
+- Chat page DMs/GC toggle button now actually switches to a working DMs view (add contact, incoming requests with accept/decline, contact list, thread view with share-identity button).
+
+## Pending / not yet built
+- reactToMessage exists server-side (LoveCount/HeartCount columns already in Chat Messages sheet) but nothing on the frontend calls it yet. Ask before building — may not still be wanted.
+- DM message polling only runs while a thread is open (5s interval), and only for the currently open contact — no unread-badge/notification system for new DMs yet, and no "new DM request" badge/notification indicator in the nav menu (the request only shows up when the user actually opens the DMs list).
+- No pagination on chat or DM message lists — will get slow with very long histories eventually, not an issue yet at low volume.
+- Video upload speed is still just inherently limited by Apps Script + Drive + base64 overhead — no fix found yet beyond the existing upload-status indicator, mentioned to user as a known limitation.
+- Consider adding appsscript.json explicit oauthScopes so future scope-expansions (like DriveApp was) don't require manual re-authorization surprises.
+##Google apps script:
 const SPREADSHEET_ID = "1iB9auDG4m-_ziFl15h_yvJGQ0NQS2oQ9SvcxVX14uf0";
 
 const CLIENT_ID = "324275074378-jtfm32a1podbaeijbc6ncqkqod4gjoge.apps.googleusercontent.com";
@@ -53,6 +77,9 @@ const SHEET_GAMES = "Games";
 const SHEET_GAME_REQUESTS = "Game Requests";
 const SHEET_CHAT = "Chat Messages";
 const CHAT_FOLDER_NAME = "Here Pookies Chat Uploads";
+const SHEET_DM_REQUESTS = "DM Requests";
+const SHEET_DM_CONTACTS = "DM Contacts";
+const SHEET_DM_MESSAGES = "DM Messages";
 
 function doPost(e) {
   let body;
@@ -96,9 +123,21 @@ function doPost(e) {
       case "sendMessage":
         return jsonOut(handleSendMessage(token, body.message, body.attachmentUrl, body.attachmentType));
       case "uploadAttachment":
-        return jsonOut(handleUploadAttachment(token, body.filename, body.mimeType, body.base64Data));
+        return jsonOut(handleUploadAttachment(token, body.filename, body.mimeType, body.base64Data, body.context));
       case "reactToMessage":
         return jsonOut(handleReactToMessage(token, body.rowId, body.emoji));
+      case "sendDmRequest":
+        return jsonOut(handleSendDmRequest(token, body.method, body.identifier));
+      case "loadDms":
+        return jsonOut(handleLoadDms(token));
+      case "respondDmRequest":
+        return jsonOut(handleRespondDmRequest(token, body.requestId, body.accept));
+      case "requestShareIdentity":
+        return jsonOut(handleRequestShareIdentity(token, body.contactId));
+      case "getDmMessages":
+        return jsonOut(handleGetDmMessages(token, body.contactId));
+      case "sendDmMessage":
+        return jsonOut(handleSendDmMessage(token, body.contactId, body.message, body.attachmentUrl, body.attachmentType));
       default:
         return jsonOut({ success: false, message: "Unknown action." });
     }
@@ -364,11 +403,15 @@ function handleSendMessage(token, message, attachmentUrl, attachmentType) {
   return { success: true };
 }
 
-function handleUploadAttachment(token, filename, mimeType, base64Data) {
+function handleUploadAttachment(token, filename, mimeType, base64Data, context) {
   const validation = handleValidateSession(token);
   if (!validation.success) return validation;
 
   if (!base64Data) return { success: false, message: "No file provided." };
+
+  if (context === "dm" && mimeType.indexOf("video/") === 0) {
+    return { success: false, message: "Videos aren't allowed in DMs." };
+  }
 
   try {
     const bytes = Utilities.base64Decode(base64Data);
@@ -379,7 +422,6 @@ function handleUploadAttachment(token, filename, mimeType, base64Data) {
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
 
     const fileId = file.getId();
-    const url = "https://drive.google.com/uc?export=view&id=" + fileId;
 
     let type = "file";
     if (mimeType === "image/gif") {
@@ -389,6 +431,10 @@ function handleUploadAttachment(token, filename, mimeType, base64Data) {
     } else if (mimeType.indexOf("video/") === 0) {
       type = "video";
     }
+
+    const url = type === "video"
+      ? "https://drive.google.com/file/d/" + fileId + "/view"
+      : "https://lh3.googleusercontent.com/d/" + fileId;
 
     return { success: true, url: url, type: type };
   } catch (err) {
@@ -414,6 +460,275 @@ function getOrCreateChatFolder() {
   const folders = DriveApp.getFoldersByName(CHAT_FOLDER_NAME);
   if (folders.hasNext()) return folders.next();
   return DriveApp.createFolder(CHAT_FOLDER_NAME);
+}
+
+function handleSendDmRequest(token, method, identifier) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const fromEmail = session.email;
+
+  if (method === "number") {
+    if (!/^\d{6}$/.test(identifier)) {
+      return { success: false, message: "Enter a 6-digit school number." };
+    }
+
+    const toEmail = identifier + "@" + ALLOWED_DOMAIN;
+    const genericMessage = "If " + identifier + " is registered on Here pookies \uD83D\uDE18\uD83D\uDC95 they will have to accept your DM request for you to see if they are a user or not.";
+
+    if (toEmail.toLowerCase() === fromEmail.toLowerCase()) {
+      return { success: true, message: genericMessage };
+    }
+
+    const targetUser = findUserByEmail(toEmail);
+    if (!targetUser || !targetUser.active) {
+      return { success: true, message: genericMessage };
+    }
+
+    if (dmRelationExists(fromEmail, toEmail)) {
+      return { success: true, message: genericMessage };
+    }
+
+    createDmRequest(fromEmail, toEmail, "number");
+    return { success: true, message: genericMessage };
+  }
+
+  if (method === "username") {
+    const targetUser = findUserByUsername(identifier);
+    if (!targetUser) {
+      return { success: false, message: "No user found with that username." };
+    }
+
+    if (targetUser.email.toLowerCase() === fromEmail.toLowerCase()) {
+      return { success: false, message: "That's your own username." };
+    }
+
+    if (dmRelationExists(fromEmail, targetUser.email)) {
+      return { success: false, message: "You're already connected or have a pending request with this person." };
+    }
+
+    createDmRequest(fromEmail, targetUser.email, "username");
+    return { success: true, message: "Request sent to " + targetUser.username + "." };
+  }
+
+  return { success: false, message: "Invalid method." };
+}
+
+function dmRelationExists(emailA, emailB) {
+  const requests = getSheet(SHEET_DM_REQUESTS).getDataRange().getValues();
+
+  for (let i = 1; i < requests.length; i++) {
+    const row = requests[i];
+    const matches =
+      (row[1].toLowerCase() === emailA.toLowerCase() && row[2].toLowerCase() === emailB.toLowerCase()) ||
+      (row[1].toLowerCase() === emailB.toLowerCase() && row[2].toLowerCase() === emailA.toLowerCase());
+
+    if (matches && row[4] !== "declined") return true;
+  }
+
+  return false;
+}
+
+function createDmRequest(fromEmail, toEmail, method) {
+  getSheet(SHEET_DM_REQUESTS).appendRow([new Date(), fromEmail, toEmail, method, "pending"]);
+  appendLog(fromEmail, "DM_REQUEST", "To " + toEmail + " via " + method, "");
+}
+
+function findUserByUsername(username) {
+  const sheet = getSheet(SHEET_USERS);
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (String(row[1]).toLowerCase() === String(username).toLowerCase()) {
+      return {
+        rowIndex: i + 1,
+        email: row[0],
+        username: row[1],
+        role: Number(row[2]),
+        active: row[3] === true || row[3] === "TRUE" || row[3] === 1
+      };
+    }
+  }
+  return null;
+}
+
+function handleLoadDms(token) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const myEmail = session.email;
+
+  const requestsSheet = getSheet(SHEET_DM_REQUESTS);
+  const requestsData = requestsSheet.getDataRange().getValues();
+  const incomingRequests = [];
+
+  for (let i = 1; i < requestsData.length; i++) {
+    const row = requestsData[i];
+    if (row[2].toLowerCase() === myEmail.toLowerCase() && row[4] === "pending") {
+      const fromUser = findUserByEmail(row[1]);
+      incomingRequests.push({
+        requestId: i + 1,
+        method: row[3],
+        display: row[3] === "number" ? row[1].split("@")[0] : (fromUser ? fromUser.username : "Unknown")
+      });
+    }
+  }
+
+  return {
+    success: true,
+    requests: incomingRequests,
+    contacts: getDmContactsList(myEmail)
+  };
+}
+
+function getDmContactsList(myEmail) {
+  const sheet = getSheet(SHEET_DM_CONTACTS);
+  const data = sheet.getDataRange().getValues();
+  const contacts = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const userA = row[1];
+    const userB = row[2];
+
+    if (userA.toLowerCase() !== myEmail.toLowerCase() && userB.toLowerCase() !== myEmail.toLowerCase()) continue;
+
+    const iAmA = userA.toLowerCase() === myEmail.toLowerCase();
+    const otherEmail = iAmA ? userB : userA;
+    const method = row[3];
+    const consentA = row[4] === true || row[4] === "TRUE";
+    const consentB = row[5] === true || row[5] === "TRUE";
+    const bothConsented = consentA && consentB;
+    const myConsent = iAmA ? consentA : consentB;
+
+    const otherUser = findUserByEmail(otherEmail);
+    const otherNumber = otherEmail.split("@")[0];
+    const otherUsername = otherUser ? otherUser.username : "Unknown";
+
+    let display = method === "number" ? otherNumber : otherUsername;
+    let revealedExtra = null;
+
+    if (bothConsented) {
+      revealedExtra = method === "number" ? otherUsername : otherNumber;
+    }
+
+    contacts.push({
+      contactId: i + 1,
+      display: display,
+      revealedExtra: revealedExtra,
+      method: method,
+      shareConsented: bothConsented,
+      myConsent: myConsent
+    });
+  }
+
+  return contacts;
+}
+
+function handleRespondDmRequest(token, requestId, accept) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const sheet = getSheet(SHEET_DM_REQUESTS);
+  const row = sheet.getRange(requestId, 1, 1, 5).getValues()[0];
+
+  if (!row[2] || row[2].toLowerCase() !== session.email.toLowerCase()) {
+    return { success: false, message: "Not your request." };
+  }
+
+  if (!accept) {
+    sheet.getRange(requestId, 5).setValue("declined");
+    return { success: true };
+  }
+
+  sheet.getRange(requestId, 5).setValue("accepted");
+
+  const contactsSheet = getSheet(SHEET_DM_CONTACTS);
+  contactsSheet.appendRow([new Date(), row[1], row[2], row[3], false, false]);
+
+  return { success: true };
+}
+
+function handleRequestShareIdentity(token, contactId) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const sheet = getSheet(SHEET_DM_CONTACTS);
+  const row = sheet.getRange(contactId, 1, 1, 6).getValues()[0];
+
+  if (row[1].toLowerCase() === session.email.toLowerCase()) {
+    sheet.getRange(contactId, 5).setValue(true);
+  } else if (row[2].toLowerCase() === session.email.toLowerCase()) {
+    sheet.getRange(contactId, 6).setValue(true);
+  } else {
+    return { success: false, message: "Not your contact." };
+  }
+
+  return { success: true };
+}
+
+function handleGetDmMessages(token, contactId) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const contactsSheet = getSheet(SHEET_DM_CONTACTS);
+  const contactRow = contactsSheet.getRange(contactId, 1, 1, 6).getValues()[0];
+
+  if (contactRow[1].toLowerCase() !== session.email.toLowerCase() && contactRow[2].toLowerCase() !== session.email.toLowerCase()) {
+    return { success: false, message: "Not your contact." };
+  }
+
+  const sheet = getSheet(SHEET_DM_MESSAGES);
+  const data = sheet.getDataRange().getValues();
+  const messages = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (Number(row[1]) !== Number(contactId)) continue;
+
+    messages.push({
+      fromMe: row[2].toLowerCase() === session.email.toLowerCase(),
+      message: row[3],
+      attachmentUrl: row[4],
+      attachmentType: row[5],
+      timestamp: row[0]
+    });
+  }
+
+  return { success: true, messages: messages };
+}
+
+function handleSendDmMessage(token, contactId, message, attachmentUrl, attachmentType) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  if (!message && !attachmentUrl) return { success: false, message: "Empty message." };
+  if (attachmentType === "video") return { success: false, message: "Videos aren't allowed in DMs." };
+
+  const session = findSessionByToken(token);
+  const contactsSheet = getSheet(SHEET_DM_CONTACTS);
+  const contactRow = contactsSheet.getRange(contactId, 1, 1, 6).getValues()[0];
+
+  if (contactRow[1].toLowerCase() !== session.email.toLowerCase() && contactRow[2].toLowerCase() !== session.email.toLowerCase()) {
+    return { success: false, message: "Not your contact." };
+  }
+
+  getSheet(SHEET_DM_MESSAGES).appendRow([
+    new Date(),
+    contactId,
+    session.email,
+    message || "",
+    attachmentUrl || "",
+    attachmentType || ""
+  ]);
+
+  return { success: true };
 }
 
 function verifyGoogleIdToken(idToken) {
@@ -526,6 +841,9 @@ function setupSheets() {
   createSheetIfMissing(ss, SHEET_GAME_REQUESTS, ["Timestamp", "Email", "Name", "URL"]);
   createSheetIfMissing(ss, SHEET_GAMES, ["Name", "URL", "Internal", "Rating"]);
   createSheetIfMissing(ss, SHEET_CHAT, ["Timestamp", "Email", "Username", "Role", "Message", "AttachmentURL", "AttachmentType", "LoveCount", "HeartCount"]);
+  createSheetIfMissing(ss, SHEET_DM_REQUESTS, ["Timestamp", "FromEmail", "ToEmail", "Method", "Status"]);
+  createSheetIfMissing(ss, SHEET_DM_CONTACTS, ["Timestamp", "UserA", "UserB", "Method", "ShareConsentA", "ShareConsentB"]);
+  createSheetIfMissing(ss, SHEET_DM_MESSAGES, ["Timestamp", "ContactId", "FromEmail", "Message", "AttachmentURL", "AttachmentType"]);
 
   seedDefaultGames(ss);
 }
@@ -556,32 +874,5 @@ function jsonOut(obj) {
 
 ## End of google apps script
 
-## Recently completed (this session)
-- Fixed Google Sign-In button render race conditions on both login page (auth.js retry guard) and create page (initGoogleSignIn defined before external script loads).
-- Fixed real duplicate-declaration bugs in Code.gs and sheets.js that were silently breaking chat attachments.
-- Added loadApps/loadChat combined actions to cut round trips (speed).
-- Chat: diff-based rendering (no animation replay on poll), optimistic instant-send with per-message upload status tag, concurrent sends supported (each capture-and-clear own pending file).
-- Link detection in chat now works without needing http(s):// prefix (heuristic: whitespace-delimited token containing a dot with non-space on both sides of it).
-- "Slow Mode Is On" label added (cosmetic only, no real throttling — user wants it fast).
-- Nav menu (hamburger, top-right on apps/FNAF/competitions/chat) now has 4 items in a curved fan (not a straight stack): chat(blue), home(red), competition(yellow), dms(green, NEW). Added .navHoverZone invisible div so mouse can move across the gap between button and items without the menu flickering closed.
-- Chat page has a DMs/GC toggle button next to the title (green pill, sized to text). Clicking swaps between the real chat view and a DMs placeholder view. The nav menu's green DM icon on any page navigates to /home/chat?dm=1 which auto-opens the DM view.
-- Create-account page: green checkmark badge on successful Google sign-in, NEW red "Wrong Domain" badge (white circle, black cross) if the signed-in email isn't @imberhorne.co.uk — checked client-side by decoding the JWT payload (no server round trip needed for this immediate feedback). Toast notification "Successfully Requested" added on submit, matching the games toast style.
-- Guest page rewritten to match user's requested copy (benefits bullet list), typo-free.
-- Game click logging added: clicking any game pill on /home/apps or /home/apps/FNAF now calls Sheets.log("GAME_CLICK", gameName) so it shows up in the Logs sheet.
-
-## Pending / next steps (large, not yet built)
-DMs full backend — this is the big remaining item. User's exact spec, paraphrased:
-- Add contact by school number (6-digit, format xxxxxx@imberhorne.co.uk) or by username.
-- Add by number: target gets notified of the request; requester is NEVER told whether that number belongs to a real registered user (privacy) — show them exactly: "If xxxxxx is registered on Here pookies 😘💕 they will have to accept your DM request for you to see if they are a user or not."
-- Add by username: requester CAN see if that username exists (usernames are effectively public/searchable). Either party can then separately propose sharing phone-number-equivalent (school number) with the other — but this requires BOTH people to consent, not just one.
-- Same idea in reverse: if connected via number, either side can propose sharing usernames, again mutual consent required.
-- DMs support text, links, and images only — explicitly NO videos (unlike GC).
-- Needs new sheet(s), likely: DM Requests (or Contacts) tracking pending/accepted state per pair, and DM Messages (per-conversation). Needs careful design so the "don't reveal if a number is registered" privacy rule is enforced server-side (never client-side only).
-- This deserves its own focused session — don't half-build it under time pressure, the privacy requirement especially needs to be airtight server-side.
-
-Other smaller open items:
-- Video upload speed: inherently limited by Apps Script + Drive + base64 overhead for large files. No good fix found yet beyond the upload-status indicator already added. Could investigate client-side compression before upload if this remains a pain point.
-- reactToMessage exists server-side (LoveCount/HeartCount columns already in Chat Messages sheet) but nothing on the frontend calls it yet — the reaction UI from the original chat mockup (4 emoji-count style) was never built. Ask the user if they still want this before building it.
-- Sensible to eventually add appsscript.json explicit oauthScopes (drive, script.external_request) so future scope-expansions don't require manual re-authorization surprises — not done yet, current approach is manual re-auth via running a function once.
 
 ## Small tasks to do next prompt:
