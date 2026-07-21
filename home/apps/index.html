@@ -134,9 +134,7 @@ Submit
 <button class="button create small" id="meetTutorialButton">
 Tutorial
 </button>
-<label for="meetURL">URL:</label>
-<label for="meetURL">https://meet.google.com/wvq-daos-hos</label>
-</div>
+<button id="copyMeetButton">Copy URL</button>
   
 <div class="settingsOverlay hidden" id="settingsOverlay"></div>
 
@@ -371,9 +369,11 @@ showToast("Successfully Requested");
 });
 
 document.getElementById("meetTutorialButton").addEventListener("click",()=>{
-    window.open("https://meet.google.com/wvq-daos-hos","_blank");
+    window.open("https://docs.google.com/presentation/d/17Bv9zCH0hi_nTUzyD3i_zP05FV90vkFnvIYRJOkZpwc/","_blank");
 });
-
+document.getElementById("copyMeetButton").addEventListener("click",()=>{
+    navigator.clipboard.writeText("https://meet.google.com/wvq-daos-hos");
+});
 </script>
 
 </body>
