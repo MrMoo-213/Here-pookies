@@ -88,6 +88,10 @@ Games
 ＋
 </button>
 
+<button class="iconBtn" id="meetButton" aria-label="Join the google meet">
+📽
+</button>
+  
 <button class="iconBtn" id="gearButton" aria-label="Settings">
 ⚙
 </button>
@@ -124,6 +128,16 @@ Submit
 
 </div>
 
+  <div class="settingsPanel hidden" id="meetPanel">
+
+<h2>Join the google meet!</h2>
+<button class="button create small" id="meetButton">
+Tutorial
+</button>
+<label for="meetURL">URL:</label>
+<label for="meetURL">https://meet.google.com/wvq-daos-hos</label>
+</div>
+  
 <div class="settingsOverlay hidden" id="settingsOverlay"></div>
 
 <script src="/js/config.js"></script>
@@ -304,6 +318,15 @@ return;
 
 }
 
+function openMeetPanel(){
+
+if(!meetPanel.classList.contains("hidden")){
+
+closeAllPanels();
+return;
+
+}
+  
 closeAllPanels();
 addPanel.classList.remove("hidden");
 settingsOverlay.classList.remove("hidden");
@@ -313,7 +336,7 @@ settingsOverlay.classList.remove("hidden");
 gearButton.addEventListener("click",openSettings);
 
 document.getElementById("addButton").addEventListener("click",openAddPanel);
-
+document.getElementById("meetButton").addEventListener("click",openMeetPanel);
 settingsOverlay.addEventListener("click",closeAllPanels);
 
 document.getElementById("submitGameButton").addEventListener("click",async()=>{
@@ -335,6 +358,12 @@ addPanel.classList.add("hidden");
 settingsOverlay.classList.add("hidden");
 
 showToast("Successfully Requested");
+
+});
+
+document.getElementById("meetButton").addEventListener("click",async()=>{
+window.location.href="https://meet.google.com/wvq-daos-hos";
+
 
 });
 
