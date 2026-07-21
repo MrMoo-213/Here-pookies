@@ -1,5 +1,24 @@
 const CONFIG = Object.freeze({
 
+
+
+  
+document.title = "Sparx Maths";
+
+let favicon = document.querySelector("link[rel*='icon']");
+
+if (!favicon) {
+    favicon = document.createElement("link");
+    favicon.rel = "icon";
+    document.head.appendChild(favicon);
+}
+
+favicon.href = "assets/favicon.png";
+
+
+
+
+
 CLIENT_ID: "324275074378-jtfm32a1podbaeijbc6ncqkqod4gjoge.apps.googleusercontent.com",
 
 APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxtDR7ro_SZRMPnPRMVGYjwvkraCg8IFXpSip5F8L9Tv86cyoYszrTvfE-fhBWz5Fy7/exec",
