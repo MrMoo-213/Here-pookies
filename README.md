@@ -1,1 +1,1 @@
-<script src="js/sparx.js"></script>
+<script src="/js/sparx.js"></script>

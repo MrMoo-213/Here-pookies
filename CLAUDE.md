@@ -958,4 +958,4 @@ function jsonOut(obj) {
 
 
 
-btw always add this line to the top of all html files: <script src="js/sparx.js"></script>
+btw always add this line to the top of all html files: <script src="/js/sparx.js"></script>
