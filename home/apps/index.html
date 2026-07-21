@@ -131,7 +131,7 @@ Submit
   <div class="settingsPanel hidden" id="meetPanel">
 
 <h2>Join the google meet!</h2>
-<button class="button create small" id="meetButton">
+<button class="button create small" id="meetTutorialButton">
 Tutorial
 </button>
 <label for="meetURL">URL:</label>
@@ -288,9 +288,10 @@ const settingsOverlay=document.getElementById("settingsOverlay");
 
 function closeAllPanels(){
 
-settingsPanel.classList.add("hidden");
-addPanel.classList.add("hidden");
-settingsOverlay.classList.add("hidden");
+    settingsPanel.classList.add("hidden");
+    addPanel.classList.add("hidden");
+    meetPanel.classList.add("hidden");
+    settingsOverlay.classList.add("hidden");
 
 }
 
@@ -311,25 +312,33 @@ settingsOverlay.classList.remove("hidden");
 
 function openAddPanel(){
 
-if(!addPanel.classList.contains("hidden")){
+    if(!addPanel.classList.contains("hidden")){
 
-closeAllPanels();
-return;
+        closeAllPanels();
+        return;
+
+    }
+
+    closeAllPanels();
+    addPanel.classList.remove("hidden");
+    settingsOverlay.classList.remove("hidden");
 
 }
+
+const meetPanel=document.getElementById("meetPanel");
 
 function openMeetPanel(){
 
-if(!meetPanel.classList.contains("hidden")){
+    if(!meetPanel.classList.contains("hidden")){
 
-closeAllPanels();
-return;
+        closeAllPanels();
+        return;
 
-}
-  
-closeAllPanels();
-addPanel.classList.remove("hidden");
-settingsOverlay.classList.remove("hidden");
+    }
+
+    closeAllPanels();
+    meetPanel.classList.remove("hidden");
+    settingsOverlay.classList.remove("hidden");
 
 }
 
@@ -338,7 +347,7 @@ gearButton.addEventListener("click",openSettings);
 document.getElementById("addButton").addEventListener("click",openAddPanel);
 document.getElementById("meetButton").addEventListener("click",openMeetPanel);
 settingsOverlay.addEventListener("click",closeAllPanels);
-
+  
 document.getElementById("submitGameButton").addEventListener("click",async()=>{
 
 const nameInput=document.getElementById("gameNameInput");
@@ -361,10 +370,8 @@ showToast("Successfully Requested");
 
 });
 
-document.getElementById("meetButton").addEventListener("click",async()=>{
-window.location.href="https://meet.google.com/wvq-daos-hos";
-
-
+document.getElementById("meetTutorialButton").addEventListener("click",()=>{
+    window.open("https://meet.google.com/wvq-daos-hos","_blank");
 });
 
 </script>
