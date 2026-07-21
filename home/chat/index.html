@@ -31,8 +31,6 @@
 
 <div class="navMenu" id="navMenu">
 
-<div class="navHoverZone"></div>
-
 <button class="menuButton" id="menuButton" aria-label="Menu">
 ☰
 </button>
@@ -53,6 +51,10 @@
 
 <button class="navItem dms" id="navDms" aria-label="DMs">
 💬
+</button>
+
+<button class="navItem games" id="navGames" aria-label="Games">
+🎮
 </button>
 
 </div>
@@ -276,6 +278,14 @@ bubble.appendChild(link);
 
 const img=document.createElement("img");
 img.src=msg.attachmentUrl;
+
+img.addEventListener("load",()=>{
+
+const container=document.getElementById("chatMessages");
+container.scrollTop=container.scrollHeight;
+
+});
+
 bubble.appendChild(img);
 
 }
@@ -309,6 +319,12 @@ container.appendChild(buildMessageBubble(msg));
 
 container.scrollTop=container.scrollHeight;
 confirmedCount=messages.length;
+
+setTimeout(()=>{
+
+container.scrollTop=container.scrollHeight;
+
+},100);
 
 }
 
@@ -372,6 +388,12 @@ window.location.href=CONFIG.ROUTES.CHAT;
 document.getElementById("navCompetition").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.COMPETITIONS;
+
+});
+
+document.getElementById("navGames").addEventListener("click",()=>{
+
+window.location.href="/home/apps";
 
 });
 
@@ -686,6 +708,11 @@ acceptBtn.className="button create small";
 acceptBtn.textContent="Accept";
 acceptBtn.addEventListener("click",async()=>{
 
+if(acceptBtn.disabled)return;
+
+acceptBtn.disabled=true;
+declineBtn.disabled=true;
+
 await Sheets.respondDmRequest(req.requestId,true);
 loadDmsList();
 
@@ -696,6 +723,11 @@ const declineBtn=document.createElement("button");
 declineBtn.className="button guest";
 declineBtn.textContent="Decline";
 declineBtn.addEventListener("click",async()=>{
+
+if(declineBtn.disabled)return;
+
+acceptBtn.disabled=true;
+declineBtn.disabled=true;
 
 await Sheets.respondDmRequest(req.requestId,false);
 loadDmsList();
@@ -811,6 +843,14 @@ if(msg.attachmentUrl){
 
 const img=document.createElement("img");
 img.src=msg.attachmentUrl;
+
+img.addEventListener("load",()=>{
+
+const container=document.getElementById("dmMessages");
+container.scrollTop=container.scrollHeight;
+
+});
+
 bubble.appendChild(img);
 
 }
@@ -837,6 +877,12 @@ container.appendChild(buildDmBubble(msg));
 });
 
 container.scrollTop=container.scrollHeight;
+
+setTimeout(()=>{
+
+container.scrollTop=container.scrollHeight;
+
+},100);
 
 }
 

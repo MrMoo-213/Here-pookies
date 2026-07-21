@@ -206,4 +206,12 @@ attachmentType
 
 }
 
+static async changeUsername(newUsername){
+
+return await this.request("changeUsername",{
+newUsername
+});
+
+}
+
 }

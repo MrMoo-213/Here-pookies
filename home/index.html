@@ -18,6 +18,11 @@
 <div class="spinner"></div>
 </div>
 
+<div class="toast" id="toast">
+<span class="tick">✓</span>
+<span id="toastText">Name updated</span>
+</div>
+
 <div class="dashboard">
 
 <header class="topbar">
@@ -32,6 +37,10 @@ Here pookies 😘💕
 Welcome,
 <span id="username">Loading...</span>
 </div>
+
+<button class="changeNameButton" id="changeNameButton">
+Change Name
+</button>
 
 </div>
 
@@ -72,6 +81,19 @@ Logout
 
 </div>
 
+<div class="settingsPanel hidden" id="changeNamePanel">
+
+<h2>Change Name</h2>
+
+<label for="newUsernameInput">New Username:</label>
+<input type="text" id="newUsernameInput" placeholder="3-20 characters">
+
+<button class="button create small" id="submitNameButton">
+Submit
+</button>
+
+</div>
+
 <div class="settingsOverlay hidden" id="settingsOverlay"></div>
 
 <script src="/js/config.js"></script>
@@ -98,6 +120,14 @@ if(!user)return;
 document.getElementById("username").textContent=user.username;
 document.getElementById("email").textContent=user.email;
 document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
+
+const changeNameButton=document.getElementById("changeNameButton");
+
+if(user.username==="Username"){
+
+changeNameButton.classList.add("attention");
+
+}
 
 loading.classList.add("hidden");
 
@@ -129,17 +159,91 @@ window.location.href=CONFIG.ROUTES.CHAT;
 
 const gearButton=document.getElementById("gearButton");
 const settingsPanel=document.getElementById("settingsPanel");
+const changeNamePanel=document.getElementById("changeNamePanel");
 const settingsOverlay=document.getElementById("settingsOverlay");
 
-function toggleSettings(){
+function closeAllPanels(){
 
-settingsPanel.classList.toggle("hidden");
-settingsOverlay.classList.toggle("hidden");
+settingsPanel.classList.add("hidden");
+changeNamePanel.classList.add("hidden");
+settingsOverlay.classList.add("hidden");
 
 }
 
-gearButton.addEventListener("click",toggleSettings);
-settingsOverlay.addEventListener("click",toggleSettings);
+function openSettings(){
+
+if(!settingsPanel.classList.contains("hidden")){
+
+closeAllPanels();
+return;
+
+}
+
+closeAllPanels();
+settingsPanel.classList.remove("hidden");
+settingsOverlay.classList.remove("hidden");
+
+}
+
+function openChangeName(){
+
+if(!changeNamePanel.classList.contains("hidden")){
+
+closeAllPanels();
+return;
+
+}
+
+closeAllPanels();
+changeNamePanel.classList.remove("hidden");
+settingsOverlay.classList.remove("hidden");
+
+}
+
+gearButton.addEventListener("click",openSettings);
+document.getElementById("changeNameButton").addEventListener("click",openChangeName);
+settingsOverlay.addEventListener("click",closeAllPanels);
+
+function showToast(message){
+
+const toast=document.getElementById("toast");
+document.getElementById("toastText").textContent=message;
+
+toast.classList.add("show");
+
+setTimeout(()=>{
+
+toast.classList.remove("show");
+
+},3000);
+
+}
+
+document.getElementById("submitNameButton").addEventListener("click",async()=>{
+
+const input=document.getElementById("newUsernameInput");
+const newUsername=input.value.trim();
+
+if(!newUsername)return;
+
+const result=await Sheets.changeUsername(newUsername);
+
+if(!result.success){
+
+showToast(result.message||"Couldn't update name.");
+return;
+
+}
+
+document.getElementById("username").textContent=result.username;
+document.getElementById("changeNameButton").classList.remove("attention");
+input.value="";
+
+closeAllPanels();
+
+showToast("Name updated");
+
+});
 
 </script>
 

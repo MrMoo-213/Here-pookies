@@ -35,8 +35,6 @@ Games
 
 <div class="navMenu" id="navMenu">
 
-<div class="navHoverZone"></div>
-
 <button class="menuButton" id="menuButton" aria-label="Menu">
 ☰
 </button>
@@ -57,6 +55,10 @@ Games
 
 <button class="navItem dms" id="navDms" aria-label="DMs">
 💬
+</button>
+
+<button class="navItem games" id="navGames" aria-label="Games">
+🎮
 </button>
 
 </div>
@@ -156,7 +158,7 @@ grid.innerHTML="";
 games.forEach(game=>{
 
 const button=document.createElement("button");
-button.className="pill pill-blue";
+button.className=game.internal?"pill pill-internal":"pill pill-blue";
 button.textContent=game.name;
 
 button.addEventListener("click",()=>{
@@ -231,6 +233,12 @@ window.location.href=CONFIG.ROUTES.CHAT+"?dm=1";
 
 });
 
+document.getElementById("navGames").addEventListener("click",()=>{
+
+window.location.href="/home/apps";
+
+});
+
 const navMenu=document.getElementById("navMenu");
 const menuButton=document.getElementById("menuButton");
 
@@ -264,31 +272,49 @@ const settingsPanel=document.getElementById("settingsPanel");
 const addPanel=document.getElementById("addPanel");
 const settingsOverlay=document.getElementById("settingsOverlay");
 
-function toggleSettings(){
-
-settingsPanel.classList.toggle("hidden");
-settingsOverlay.classList.toggle("hidden");
-
-}
-
-function toggleAddPanel(){
-
-addPanel.classList.toggle("hidden");
-settingsOverlay.classList.toggle("hidden");
-
-}
-
-gearButton.addEventListener("click",toggleSettings);
-
-document.getElementById("addButton").addEventListener("click",toggleAddPanel);
-
-settingsOverlay.addEventListener("click",()=>{
+function closeAllPanels(){
 
 settingsPanel.classList.add("hidden");
 addPanel.classList.add("hidden");
 settingsOverlay.classList.add("hidden");
 
-});
+}
+
+function openSettings(){
+
+if(!settingsPanel.classList.contains("hidden")){
+
+closeAllPanels();
+return;
+
+}
+
+closeAllPanels();
+settingsPanel.classList.remove("hidden");
+settingsOverlay.classList.remove("hidden");
+
+}
+
+function openAddPanel(){
+
+if(!addPanel.classList.contains("hidden")){
+
+closeAllPanels();
+return;
+
+}
+
+closeAllPanels();
+addPanel.classList.remove("hidden");
+settingsOverlay.classList.remove("hidden");
+
+}
+
+gearButton.addEventListener("click",openSettings);
+
+document.getElementById("addButton").addEventListener("click",openAddPanel);
+
+settingsOverlay.addEventListener("click",closeAllPanels);
 
 document.getElementById("submitGameButton").addEventListener("click",async()=>{
 

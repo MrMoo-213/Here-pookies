@@ -14,24 +14,29 @@ School-restricted website (Imberhorne school, domain imberhorne.co.uk). Frontend
 - If Code.gs gains a new Google API usage (e.g. DriveApp), the script owner must manually re-authorize: select the relevant no-arg function in the Apps Script dropdown (e.g. getOrCreateChatFolder), Run it, approve the permission prompt, then redeploy.
 - Google Drive does NOT reliably serve files for direct <img>/<video> embedding via the old "uc?export=view" URL — use "https://lh3.googleusercontent.com/d/FILEID" for images (works for direct embedding), and for video just link out to "https://drive.google.com/file/d/FILEID/view" instead of embedding (Drive doesn't support inline video playback reliably — no proper range requests). Frontend renders video attachments as a "Watch video" link, not an inline <video> tag, once persisted (local blob: URLs during upload are still shown inline for preview).
 - CSS gotcha learned the hard way: avoid nesting a second position:absolute element (e.g. a wrapper div) between a position:relative container and the elements you're trying to position absolutely relative to that container — the wrapper becomes its own containing block and silently breaks the intended positioning math. Keep positioning contexts as flat/shallow as possible.
+- Flexbox gotcha: a flex:1 child that's supposed to scroll internally (overflow-y:auto) needs min-height:0 explicitly set on itself AND on any flex-column ancestor between it and the nearest bounded-height container — without it, flex items default to min-height:auto and refuse to shrink below their content size, so instead of scrolling, the whole column overflows and gets clipped by a parent's overflow:hidden (this silently ate the chat/DM input bar once already — .chatArea, .dmThreadView, .chatMessages all need min-height:0).
+- Nav menu hover-vs-click gotcha: if you ever see the nav menu popping open on mouseover when it's only supposed to open on click, check for a stray `.navMenu:hover .navItem` CSS rule living alongside `.navMenu.open .navItem` — only the .open one should exist. Also check for an empty `<div class="navHoverZone"></div>` leftover in the markup plus a matching oversized invisible `.navHoverZone` CSS rule — this was dead cruft from an earlier hover-based nav experiment that kept resurfacing across pages; it doubles as an invisible click-blocker over whatever's underneath it, so remove both the div and the CSS rule entirely if found again, don't just fix the hover behavior and leave the div there.
 
 ## Routes (js/config.js CONFIG.ROUTES)
 - / — login page (index.html)
-- /home — dashboard (3 pills: Competitions, Apps, Chat)
+- /home — dashboard (3 pills: Competitions, Apps, Chat; also has a "Change Name" button + panel, no nav menu bubble here by design)
 - /home/apps — games list, dynamic from Games sheet
 - /home/apps/FNAF — hardcoded FNAF sub-games, no sheet dependency
 - /home/competitions — coming soon placeholder
-- /home/chat — chat (GC) + DMs toggle, full DM system now built (see below)
+- /home/chat — chat (GC) + DMs toggle, full DM system built
 - /guest — public "coming soon" benefits page, no auth
 - /create — request-account flow (3 stages: warning -> google signin + username -> confirmation)
 - /404.html — GitHub Pages 404
+
+## Nav menu (home/apps, home/chat, home/competitions, home/apps/FNAF — NOT home/index.html)
+Click-only (not hover) fan-out menu, top-right of topbar, five bubbles staggered in a diagonal staircase via flex-column + per-item margin-right: chat (blue #2f8fe0) -> /home/chat, home (red #d43b3b) -> /home, competition (yellow #e0b800) -> /home/competitions, dms (green #28b44b) -> /home/chat?dm=1, games (purple #9b4de0) -> /home/apps. Toggled via .navMenu.open, closed on outside click. If adding a 6th item, add another .navItem:nth-child(6) rule with an incremented margin-right in css/home.css.
 
 ## Google Sheets structure
 1. Users: Email, Username, Role (0=User,1=Admin,2=Manager,3=Creator), Active (TRUE gates login)
 2. Logs: Timestamp, Email, Action, Details, IP (IP always blank — Apps Script web apps can't see client IP). GAME_CLICK actions now logged when a user clicks any game on /apps or /apps/FNAF.
 3. Account Requests: Timestamp, Email, Name, Status
 4. Active Sessions: Token, Email, Created, Expires, IP
-5. Games: Name, URL, Internal (1=internal path like home/apps/x, 0=external full URL), Rating (0 default, unused so far)
+5. Games: Name, URL, Internal (1=internal path like home/apps/x, 0=external full URL), Rating (0 default, unused so far). Internal games render as a green pill on /home/apps, external stay the default blue pill.
 6. Game Requests: Timestamp, Email, Name, URL (dedup by URL, silently ignored if duplicate)
 7. Chat Messages: Timestamp, Email, Username, Role, Message, AttachmentURL, AttachmentType, LoveCount, HeartCount (last 2 unused by frontend currently, reactToMessage action exists server-side but nothing calls it yet)
 8. DM Requests: Timestamp, FromEmail, ToEmail, Method (number/username), Status (pending/accepted/declined)
@@ -39,7 +44,7 @@ School-restricted website (Imberhorne school, domain imberhorne.co.uk). Frontend
 10. DM Messages: Timestamp, ContactId (row number in DM Contacts), FromEmail, Message, AttachmentURL, AttachmentType (images only, video blocked server-side even if somehow sent from client)
 
 ## Backend actions (doPost, Code.gs)
-login, validateSession, getUser, getRole, logout, log, requestAccount, heartbeat, getGames, loadApps, requestGame, loadChat, getMessages, sendMessage, uploadAttachment (now takes a context param: pass "dm" to block video uploads), reactToMessage (unused by frontend still), sendDmRequest, loadDms, respondDmRequest, requestShareIdentity, getDmMessages, sendDmMessage.
+login, validateSession, getUser, getRole, logout, log, requestAccount, heartbeat, getGames, loadApps, requestGame, loadChat, getMessages, sendMessage, uploadAttachment (takes a context param: pass "dm" to block video uploads), reactToMessage (unused by frontend still), sendDmRequest, loadDms, respondDmRequest, requestShareIdentity, getDmMessages, sendDmMessage, changeUsername (new this session — validates 3-20 chars, alphanumeric+underscore only, rejects if taken by another active user, updates Users sheet in place).
 
 ## DM system design (privacy rules — read carefully before changing)
 - Add by NUMBER (6-digit, xxxxxx@imberhorne.co.uk): requester NEVER learns if that number belongs to a real/active user. Response message is IDENTICAL regardless of whether the number exists: "If xxxxxx is registered on Here pookies (emoji) they will have to accept your DM request for you to see if they are a user or not." This is enforced server-side in handleSendDmRequest — do not change this to leak existence info.
@@ -48,12 +53,17 @@ login, validateSession, getUser, getRole, logout, log, requestAccount, heartbeat
 - The OTHER identifier stays hidden until BOTH people separately click "share" (ShareConsentA and ShareConsentB both true) — handleRequestShareIdentity just sets the caller's own flag; reveal happens automatically once both are true, computed at read-time in getDmContactsList, nothing is written to the "revealed" state — it's derived live from the two consent booleans every time.
 - DM attachments are images only (frontend file input uses accept="image/*", no video option in the DM attach flow at all, and the backend independently rejects any video mimeType passed with context="dm" as defense in depth).
 - Group chat (GC) still allows video, unaffected by the DM restriction.
+- Accept is idempotent both server-side and client-side: handleRespondDmRequest checks the request isn't already "accepted" AND checks dmContactExists before appending a new DM Contacts row, and the frontend disables the Accept/Decline buttons immediately on click. This exists because rapid double-clicking used to create duplicate DM Contacts rows for the same pair, which made multiple DM threads open for the same person — fixed this session, don't remove either the frontend disabling or the backend existence check, they're both needed (defense in depth, a slow/retried network request could still double-fire even with the button disabled).
 
 ## Recently completed (this session)
-- Fixed the broken-image-on-refresh bug: switched image URL format to lh3.googleusercontent.com/d/, switched video to a "Watch video" link instead of a broken inline <video> tag for persisted messages (local blob preview during upload is unaffected, still shows inline).
-- Fixed a genuinely broken nav-menu CSS layout (icons rendering scattered near the top of the page instead of fanning from the button) — root cause was likely a nested position:absolute wrapper creating an unintended containing block. Rebuilt using a flat flex-column with per-item margin-right staggering (a diagonal "staircase" curve) instead of fragile manual top/right math per item. Much more robust, test this again after deploy and report back if it's still off.
-- Built the full DM system: request/accept flow, privacy-preserving number lookup vs public username lookup, mutual-consent identity reveal, 1:1 threaded messaging, image-only attachments. See "DM system design" above for the exact rules — this was carefully spec'd by the user, don't casually change the privacy behavior.
-- Chat page DMs/GC toggle button now actually switches to a working DMs view (add contact, incoming requests with accept/decline, contact list, thread view with share-identity button).
+- Nav menu: fixed it still opening on hover (a leftover `.navMenu:hover .navItem` CSS rule was firing alongside the click-based `.navMenu.open .navItem` one) — deleted the hover rule and the associated dead invisible `.navHoverZone` div/CSS that was sitting as an undetected click-blocker over page content on every page (home/apps, home/chat, home/competitions, home/apps/FNAF). Added a 5th nav bubble, "games" (purple #9b4de0), navigating to /home/apps, on all four pages.
+- DM accept-multiple-times bug fixed in both places: Code.gs's handleRespondDmRequest now checks the request isn't already accepted and that a contact doesn't already exist before appending a new DM Contacts row; frontend disables Accept/Decline immediately on click.
+- DM thread scroll bug fixed: added min-height:0 to .chatArea, .dmThreadView, .chatMessages so the message list scrolls internally instead of the whole column overflowing and clipping the input bar off-screen (see the flexbox gotcha note above).
+- Games add-panel toggle logic rewritten as explicit openSettings()/openAddPanel()/closeAllPanels() functions with one shared source of truth, replacing two independent .toggle("hidden") calls on a shared overlay that could desync depending on click order. Could not confirm a specific root-cause bug by static reading beyond this desync risk — if the user reports it's STILL not opening after this, it needs a live browser console screenshot to diagnose further, not more guessing from the code alone.
+- Chat/DM scroll-to-bottom-on-open fixed: images load asynchronously after the initial render's scrollTop assignment, growing the container height afterward and leaving the view scrolled short of the true bottom. Now re-applies scrollTop on each image's load event plus a 100ms settle re-check after initial render, for both group chat and DM threads.
+- Games list-view: widened list-view rows (340px, centered) for a clearer one-per-line list feel. Internal games (Internal=1 in the Games sheet) now render as a green pill (.pill-internal); external games keep the default blue pill.
+- New "Change Name" feature on home/index.html: button + drawer panel (reuses the .settingsPanel pattern), calls the new changeUsername backend action. If the user's current username is still the literal default "Username", the button gets a pulsing green glow (.attention class, PulseGlow keyframe in animations.css) to nudge them to change it — stops automatically once they do, since the condition is just username==="Username".
+- Converted the old dotfile-style `.claude` memory file to `CLAUDE.md` (same content/purpose, just a readable filename/extension the user can actually open — keep writing here going forward, not to a new `.claude` file).
 
 ## Pending / not yet built
 - reactToMessage exists server-side (LoveCount/HeartCount columns already in Chat Messages sheet) but nothing on the frontend calls it yet. Ask before building — may not still be wanted.
@@ -61,6 +71,10 @@ login, validateSession, getUser, getRole, logout, log, requestAccount, heartbeat
 - No pagination on chat or DM message lists — will get slow with very long histories eventually, not an issue yet at low volume.
 - Video upload speed is still just inherently limited by Apps Script + Drive + base64 overhead — no fix found yet beyond the existing upload-status indicator, mentioned to user as a known limitation.
 - Consider adding appsscript.json explicit oauthScopes so future scope-expansions (like DriveApp was) don't require manual re-authorization surprises.
+- User mentioned "the games menu doesn't open" as a bug this session — fixed the most plausible cause (panel state desync, see above) but couldn't 100% confirm it was THE cause from static reading alone. Check with the user next session whether it's actually resolved.
+
+## Small tasks to do next prompt:
+
 ##Google apps script:
 const SPREADSHEET_ID = "1iB9auDG4m-_ziFl15h_yvJGQ0NQS2oQ9SvcxVX14uf0";
 
@@ -138,6 +152,8 @@ function doPost(e) {
         return jsonOut(handleGetDmMessages(token, body.contactId));
       case "sendDmMessage":
         return jsonOut(handleSendDmMessage(token, body.contactId, body.message, body.attachmentUrl, body.attachmentType));
+      case "changeUsername":
+        return jsonOut(handleChangeUsername(token, body.newUsername));
       default:
         return jsonOut({ success: false, message: "Unknown action." });
     }
@@ -158,7 +174,7 @@ function handleLogin(idToken) {
 
   const email = claims.email.toLowerCase();
   if (!email.endsWith("@" + ALLOWED_DOMAIN)) {
-    return { success: false, message: "Only @" + ALLOWED_DOMAIN + " accounts may sign in." };
+    return { success: false, message: "Only @" + ALLOWED_DOMAIN + " accounts may sign in.", errorCode: "WRONG_DOMAIN" };
   }
 
   const user = findUserByEmail(email);
@@ -244,7 +260,7 @@ function handleRequestAccount(idTokenOrEmail, name) {
 
   if (!email) return { success: false, message: "Missing email." };
   if (!email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN)) {
-    return { success: false, message: "Only @" + ALLOWED_DOMAIN + " accounts may request access." };
+    return { success: false, message: "Only @" + ALLOWED_DOMAIN + " accounts may request access.", errorCode: "WRONG_DOMAIN" };
   }
 
   const sheet = getSheet(SHEET_REQUESTS);
@@ -527,6 +543,25 @@ function dmRelationExists(emailA, emailB) {
     if (matches && row[4] !== "declined") return true;
   }
 
+  if (dmContactExists(emailA, emailB)) return true;
+
+  return false;
+}
+
+function dmContactExists(emailA, emailB) {
+  const contacts = getSheet(SHEET_DM_CONTACTS).getDataRange().getValues();
+
+  for (let i = 1; i < contacts.length; i++) {
+    const row = contacts[i];
+    if (!row[1] || !row[2]) continue;
+
+    const matches =
+      (row[1].toLowerCase() === emailA.toLowerCase() && row[2].toLowerCase() === emailB.toLowerCase()) ||
+      (row[1].toLowerCase() === emailB.toLowerCase() && row[2].toLowerCase() === emailA.toLowerCase());
+
+    if (matches) return true;
+  }
+
   return false;
 }
 
@@ -594,6 +629,7 @@ function getDmContactsList(myEmail) {
     const userA = row[1];
     const userB = row[2];
 
+    if (!userA || !userB) continue;
     if (userA.toLowerCase() !== myEmail.toLowerCase() && userB.toLowerCase() !== myEmail.toLowerCase()) continue;
 
     const iAmA = userA.toLowerCase() === myEmail.toLowerCase();
@@ -640,15 +676,31 @@ function handleRespondDmRequest(token, requestId, accept) {
     return { success: false, message: "Not your request." };
   }
 
+  if (row[4] === "declined") {
+    return { success: true };
+  }
+
   if (!accept) {
+
+    if (row[4] === "accepted") {
+      return { success: true };
+    }
+
     sheet.getRange(requestId, 5).setValue("declined");
+    return { success: true };
+
+  }
+
+  if (row[4] === "accepted") {
     return { success: true };
   }
 
   sheet.getRange(requestId, 5).setValue("accepted");
 
-  const contactsSheet = getSheet(SHEET_DM_CONTACTS);
-  contactsSheet.appendRow([new Date(), row[1], row[2], row[3], false, false]);
+  if (!dmContactExists(row[1], row[2])) {
+    const contactsSheet = getSheet(SHEET_DM_CONTACTS);
+    contactsSheet.appendRow([new Date(), row[1], row[2], row[3], false, false]);
+  }
 
   return { success: true };
 }
@@ -729,6 +781,35 @@ function handleSendDmMessage(token, contactId, message, attachmentUrl, attachmen
   ]);
 
   return { success: true };
+}
+
+function handleChangeUsername(token, newUsername) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const user = findUserByEmail(session.email);
+  if (!user) return { success: false, message: "User not found." };
+
+  const trimmed = String(newUsername || "").trim();
+
+  if (trimmed.length < 3 || trimmed.length > 20) {
+    return { success: false, message: "Username must be 3-20 characters." };
+  }
+
+  if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+    return { success: false, message: "Letters, numbers, and underscores only." };
+  }
+
+  const existing = findUserByUsername(trimmed);
+  if (existing && existing.email.toLowerCase() !== user.email.toLowerCase()) {
+    return { success: false, message: "That username is taken." };
+  }
+
+  getSheet(SHEET_USERS).getRange(user.rowIndex, 2).setValue(trimmed);
+  appendLog(user.email, "USERNAME_CHANGED", trimmed, "");
+
+  return { success: true, username: trimmed };
 }
 
 function verifyGoogleIdToken(idToken) {
@@ -873,6 +954,3 @@ function jsonOut(obj) {
 }
 
 ## End of google apps script
-
-
-## Small tasks to do next prompt:
