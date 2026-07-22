@@ -96,6 +96,12 @@ SessionManager.destroy();
 
 static async logout(){
 
+const loading=document.getElementById("loading");
+
+if(loading){
+loading.classList.remove("hidden");
+}
+
 try{
 
 await Sheets.logout();
@@ -106,7 +112,9 @@ await Logger.logout();
 
 SessionManager.destroy();
 
+if(typeof google!=="undefined"&&google.accounts){
 google.accounts.id.disableAutoSelect();
+}
 
 window.location.replace(CONFIG.ROUTES.LOGIN);
 

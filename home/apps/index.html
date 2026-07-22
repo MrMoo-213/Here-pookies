@@ -2,6 +2,13 @@
 <html lang="en">
 <head>
 <script src="/js/sparx.js"></script>
+
+<script>
+
+const MEET_LINK="https://meet.google.com/wvq-daos-hos";
+
+</script>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
@@ -53,13 +60,15 @@ Games
 🏆
 </button>
 
-<button class="navItem dms" id="navDms" aria-label="DMs">
-💬
-</button>
-
 <button class="navItem games" id="navGames" aria-label="Games">
 🎮
 </button>
+
+</div>
+
+<div class="gamesDropdown" id="gamesDropdown">
+
+<div class="gamesList" id="gamesDropdownList"></div>
 
 </div>
 
@@ -77,21 +86,27 @@ Games
 
 <div class="iconStack">
 
-<button class="iconBtn" id="layoutButton" aria-label="Toggle layout">
-<svg viewBox="0 0 36 20" width="24" height="14">
-<rect x="1" y="1" width="34" height="18" rx="9" fill="none" stroke="currentColor" stroke-width="2"/>
-<circle cx="10" cy="10" r="6" fill="currentColor"/>
-</svg>
-</button>
-
 <button class="iconBtn" id="addButton" aria-label="Add game">
 ＋
 </button>
 
-<button class="iconBtn" id="meetButton" aria-label="Join the google meet">
-📽
+<div class="meetIconWrap">
+
+<button class="helpBtn" id="helpButton" aria-label="Help">
+?
 </button>
-  
+
+<button class="iconBtn" id="meetButton" aria-label="Copy Google Meet link">
+<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<rect x="2" y="6" width="14" height="12" rx="3" fill="#00832d"/>
+<path d="M16 10l6-3.5v11L16 14z" fill="#00ac47"/>
+<rect x="2" y="6" width="14" height="4" rx="2" fill="#00ac47"/>
+<rect x="2" y="14" width="14" height="4" rx="2" fill="#0066da"/>
+</svg>
+</button>
+
+</div>
+
 <button class="iconBtn" id="gearButton" aria-label="Settings">
 ⚙
 </button>
@@ -128,14 +143,6 @@ Submit
 
 </div>
 
-  <div class="settingsPanel hidden" id="meetPanel">
-
-<h2>Join the google meet!</h2>
-<button class="button create small" id="meetTutorialButton">
-Tutorial
-</button>
-<button class="button create small" id="copyMeetButton">Copy URL</button>
-  
 <div class="settingsOverlay hidden" id="settingsOverlay"></div>
 
 <script src="/js/config.js"></script>
@@ -162,18 +169,7 @@ toast.classList.remove("show");
 
 }
 
-function renderGames(games){
-
-const grid=document.getElementById("appsGrid");
-grid.innerHTML="";
-
-games.forEach(game=>{
-
-const button=document.createElement("button");
-button.className=game.internal?"pill pill-internal":"pill pill-blue";
-button.textContent=game.name;
-
-button.addEventListener("click",()=>{
+function playGame(game){
 
 Sheets.log("GAME_CLICK",game.name);
 
@@ -187,9 +183,52 @@ window.open(game.url,"_blank");
 
 }
 
+}
+
+function renderGames(games){
+
+const grid=document.getElementById("appsGrid");
+grid.innerHTML="";
+
+games.forEach(game=>{
+
+const button=document.createElement("button");
+button.className=game.internal?"pill pill-internal":"pill pill-blue";
+button.textContent=game.name;
+
+button.addEventListener("click",()=>{
+
+playGame(game);
+
 });
 
 grid.appendChild(button);
+
+});
+
+}
+
+let loadedGames=[];
+
+function renderGamesDropdown(games){
+
+const list=document.getElementById("gamesDropdownList");
+list.innerHTML="";
+
+games.forEach(game=>{
+
+const button=document.createElement("button");
+button.className=game.internal?"pill pill-internal":"pill pill-blue";
+button.textContent=game.name;
+
+button.addEventListener("click",(e)=>{
+
+e.stopPropagation();
+playGame(game);
+
+});
+
+list.appendChild(button);
 
 });
 
@@ -212,7 +251,10 @@ return;
 document.getElementById("email").textContent=result.user.email;
 document.getElementById("role").textContent=CONFIG.ROLE_NAMES[result.user.role];
 
-renderGames(result.games);
+loadedGames=result.games;
+
+renderGames(loadedGames);
+renderGamesDropdown(loadedGames);
 
 SessionManager.startWatcher();
 Logger.page(window.location.pathname);
@@ -239,37 +281,36 @@ window.location.href=CONFIG.ROUTES.COMPETITIONS;
 
 });
 
-document.getElementById("navDms").addEventListener("click",()=>{
-
-window.location.href=CONFIG.ROUTES.CHAT+"?dm=1";
-
-});
-
-document.getElementById("navGames").addEventListener("click",()=>{
-
-window.location.href="/home/apps";
-
-});
-
 const navMenu=document.getElementById("navMenu");
 const menuButton=document.getElementById("menuButton");
+const gamesDropdown=document.getElementById("gamesDropdown");
 
 menuButton.addEventListener("click",(e)=>{
 
 e.stopPropagation();
+gamesDropdown.classList.remove("open");
 navMenu.classList.toggle("open");
+
+});
+
+document.getElementById("navGames").addEventListener("click",(e)=>{
+
+e.stopPropagation();
+navMenu.classList.remove("open");
+gamesDropdown.classList.toggle("open");
 
 });
 
 document.addEventListener("click",()=>{
 
 navMenu.classList.remove("open");
+gamesDropdown.classList.remove("open");
 
 });
 
-document.getElementById("layoutButton").addEventListener("click",()=>{
+gamesDropdown.addEventListener("click",(e)=>{
 
-document.getElementById("appsGrid").classList.toggle("list-view");
+e.stopPropagation();
 
 });
 
@@ -286,10 +327,9 @@ const settingsOverlay=document.getElementById("settingsOverlay");
 
 function closeAllPanels(){
 
-    settingsPanel.classList.add("hidden");
-    addPanel.classList.add("hidden");
-    meetPanel.classList.add("hidden");
-    settingsOverlay.classList.add("hidden");
+settingsPanel.classList.add("hidden");
+addPanel.classList.add("hidden");
+settingsOverlay.classList.add("hidden");
 
 }
 
@@ -310,42 +350,25 @@ settingsOverlay.classList.remove("hidden");
 
 function openAddPanel(){
 
-    if(!addPanel.classList.contains("hidden")){
+if(!addPanel.classList.contains("hidden")){
 
-        closeAllPanels();
-        return;
-
-    }
-
-    closeAllPanels();
-    addPanel.classList.remove("hidden");
-    settingsOverlay.classList.remove("hidden");
+closeAllPanels();
+return;
 
 }
 
-const meetPanel=document.getElementById("meetPanel");
-
-function openMeetPanel(){
-
-    if(!meetPanel.classList.contains("hidden")){
-
-        closeAllPanels();
-        return;
-
-    }
-
-    closeAllPanels();
-    meetPanel.classList.remove("hidden");
-    settingsOverlay.classList.remove("hidden");
+closeAllPanels();
+addPanel.classList.remove("hidden");
+settingsOverlay.classList.remove("hidden");
 
 }
 
 gearButton.addEventListener("click",openSettings);
 
 document.getElementById("addButton").addEventListener("click",openAddPanel);
-document.getElementById("meetButton").addEventListener("click",openMeetPanel);
+
 settingsOverlay.addEventListener("click",closeAllPanels);
-  
+
 document.getElementById("submitGameButton").addEventListener("click",async()=>{
 
 const nameInput=document.getElementById("gameNameInput");
@@ -368,12 +391,34 @@ showToast("Successfully Requested");
 
 });
 
-document.getElementById("meetTutorialButton").addEventListener("click",()=>{
-    window.open("https://docs.google.com/presentation/d/17Bv9zCH0hi_nTUzyD3i_zP05FV90vkFnvIYRJOkZpwc/","_blank");
+document.getElementById("meetButton").addEventListener("click",async()=>{
+
+try{
+
+await navigator.clipboard.writeText(MEET_LINK);
+
+}catch{
+
+const temp=document.createElement("textarea");
+temp.value=MEET_LINK;
+document.body.appendChild(temp);
+temp.select();
+document.execCommand("copy");
+document.body.removeChild(temp);
+
+}
+
+showToast("Copied to clipboard");
+
 });
-document.getElementById("copyMeetButton").addEventListener("click",()=>{
-    navigator.clipboard.writeText("https://meet.google.com/wvq-daos-hos");
+
+document.getElementById("helpButton").addEventListener("click",(e)=>{
+
+e.stopPropagation();
+window.open("https://docs.google.com/presentation/d/17Bv9zCH0hi_nTUzyD3i_zP05FV90vkFnvIYRJOkZpwc/","_blank");
+
 });
+
 </script>
 
 </body>

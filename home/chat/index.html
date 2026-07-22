@@ -49,13 +49,15 @@
 🏆
 </button>
 
-<button class="navItem dms" id="navDms" aria-label="DMs">
-💬
-</button>
-
 <button class="navItem games" id="navGames" aria-label="Games">
 🎮
 </button>
+
+</div>
+
+<div class="gamesDropdown" id="gamesDropdown">
+
+<div class="gamesList" id="gamesDropdownList"></div>
 
 </div>
 
@@ -391,9 +393,76 @@ window.location.href=CONFIG.ROUTES.COMPETITIONS;
 
 });
 
-document.getElementById("navGames").addEventListener("click",()=>{
+function playGame(game){
 
-window.location.href="/home/apps";
+Sheets.log("GAME_CLICK",game.name);
+
+if(game.internal){
+
+window.location.href="/"+game.url.replace(/^\/+/,"");
+
+}else{
+
+window.open(game.url,"_blank");
+
+}
+
+}
+
+let gamesLoaded=false;
+
+async function ensureGamesLoaded(){
+
+if(gamesLoaded)return;
+
+const result=await Sheets.getGames();
+
+if(!result.success)return;
+
+gamesLoaded=true;
+
+const list=document.getElementById("gamesDropdownList");
+list.innerHTML="";
+
+result.games.forEach(game=>{
+
+const button=document.createElement("button");
+button.className=game.internal?"pill pill-internal":"pill pill-blue";
+button.textContent=game.name;
+
+button.addEventListener("click",(e)=>{
+
+e.stopPropagation();
+playGame(game);
+
+});
+
+list.appendChild(button);
+
+});
+
+}
+
+const gamesDropdown=document.getElementById("gamesDropdown");
+
+document.getElementById("navGames").addEventListener("click",async(e)=>{
+
+e.stopPropagation();
+navMenu.classList.remove("open");
+
+if(!gamesDropdown.classList.contains("open")){
+
+await ensureGamesLoaded();
+
+}
+
+gamesDropdown.classList.toggle("open");
+
+});
+
+gamesDropdown.addEventListener("click",(e)=>{
+
+e.stopPropagation();
 
 });
 
@@ -423,19 +492,13 @@ setDmView(!inDmView);
 
 });
 
-document.getElementById("navDms").addEventListener("click",(e)=>{
-
-e.stopPropagation();
-setDmView(true);
-
-});
-
 const navMenu=document.getElementById("navMenu");
 const menuButton=document.getElementById("menuButton");
 
 menuButton.addEventListener("click",(e)=>{
 
 e.stopPropagation();
+gamesDropdown.classList.remove("open");
 navMenu.classList.toggle("open");
 
 });
@@ -454,6 +517,7 @@ document.addEventListener("click",()=>{
 
 navMenu.classList.remove("open");
 attachMenu.classList.remove("open");
+gamesDropdown.classList.remove("open");
 
 });
 
@@ -687,7 +751,12 @@ loadDmsList();
 
 async function loadDmsList(){
 
+const loading=document.getElementById("loading");
+loading.classList.remove("hidden");
+
 const result=await Sheets.loadDms();
+
+loading.classList.add("hidden");
 
 if(!result.success)return;
 
@@ -767,6 +836,8 @@ contactsList.appendChild(row);
 function openDmThread(contact){
 
 openContactId=contact.contactId;
+dmConfirmedCount=0;
+document.getElementById("dmMessages").innerHTML="";
 
 document.getElementById("dmsListView").classList.add("hidden");
 document.getElementById("dmThreadView").classList.remove("hidden");
@@ -859,6 +930,8 @@ return bubble;
 
 }
 
+let dmConfirmedCount=0;
+
 async function loadDmMessages(){
 
 if(!openContactId)return;
@@ -867,14 +940,17 @@ const result=await Sheets.getDmMessages(openContactId);
 
 if(!result.success)return;
 
-const container=document.getElementById("dmMessages");
-container.innerHTML="";
+if(result.messages.length<=dmConfirmedCount)return;
 
-result.messages.forEach(msg=>{
+const container=document.getElementById("dmMessages");
+
+result.messages.slice(dmConfirmedCount).forEach(msg=>{
 
 container.appendChild(buildDmBubble(msg));
 
 });
+
+dmConfirmedCount=result.messages.length;
 
 container.scrollTop=container.scrollHeight;
 

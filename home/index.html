@@ -131,6 +131,14 @@ changeNameButton.classList.add("attention");
 
 loading.classList.add("hidden");
 
+const dmResult=await Sheets.loadDms();
+
+if(dmResult.success&&dmResult.requests&&dmResult.requests.length>0){
+
+showToast("You have a pending DM request!");
+
+}
+
 });
 
 document.getElementById("logoutButton").addEventListener("click",()=>{
@@ -226,7 +234,12 @@ const newUsername=input.value.trim();
 
 if(!newUsername)return;
 
+const loading=document.getElementById("loading");
+loading.classList.remove("hidden");
+
 const result=await Sheets.changeUsername(newUsername);
+
+loading.classList.add("hidden");
 
 if(!result.success){
 

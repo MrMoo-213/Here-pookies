@@ -44,13 +44,15 @@ FNAF
 🏆
 </button>
 
-<button class="navItem dms" id="navDms" aria-label="DMs">
-💬
-</button>
-
 <button class="navItem games" id="navGames" aria-label="Games">
 🎮
 </button>
+
+</div>
+
+<div class="gamesDropdown" id="gamesDropdown">
+
+<div class="gamesList" id="gamesDropdownList"></div>
 
 </div>
 
@@ -181,15 +183,76 @@ window.location.href=CONFIG.ROUTES.COMPETITIONS;
 
 });
 
-document.getElementById("navDms").addEventListener("click",()=>{
+function playGame(game){
 
-window.location.href=CONFIG.ROUTES.CHAT+"?dm=1";
+Sheets.log("GAME_CLICK",game.name);
+
+if(game.internal){
+
+window.location.href="/"+game.url.replace(/^\/+/,"");
+
+}else{
+
+window.open(game.url,"_blank");
+
+}
+
+}
+
+let gamesLoaded=false;
+
+async function ensureGamesLoaded(){
+
+if(gamesLoaded)return;
+
+const result=await Sheets.getGames();
+
+if(!result.success)return;
+
+gamesLoaded=true;
+
+const list=document.getElementById("gamesDropdownList");
+list.innerHTML="";
+
+result.games.forEach(game=>{
+
+const button=document.createElement("button");
+button.className=game.internal?"pill pill-internal":"pill pill-blue";
+button.textContent=game.name;
+
+button.addEventListener("click",(e)=>{
+
+e.stopPropagation();
+playGame(game);
 
 });
 
-document.getElementById("navGames").addEventListener("click",()=>{
+list.appendChild(button);
 
-window.location.href="/home/apps";
+});
+
+}
+
+const gamesDropdown=document.getElementById("gamesDropdown");
+
+document.getElementById("navGames").addEventListener("click",async(e)=>{
+
+e.stopPropagation();
+navMenu.classList.remove("open");
+
+if(!gamesDropdown.classList.contains("open")){
+
+await ensureGamesLoaded();
+
+}
+
+gamesDropdown.classList.toggle("open");
+
+});
+
+gamesDropdown.addEventListener("click",(e)=>{
+
+e.stopPropagation();
 
 });
 
@@ -199,6 +262,7 @@ const menuButton=document.getElementById("menuButton");
 menuButton.addEventListener("click",(e)=>{
 
 e.stopPropagation();
+gamesDropdown.classList.remove("open");
 navMenu.classList.toggle("open");
 
 });
@@ -206,6 +270,7 @@ navMenu.classList.toggle("open");
 document.addEventListener("click",()=>{
 
 navMenu.classList.remove("open");
+gamesDropdown.classList.remove("open");
 
 });
 
