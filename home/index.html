@@ -33,14 +33,35 @@ Here pookies 😘💕
 
 <div class="userArea">
 
-<div class="welcome">
-Welcome,
-<span id="username">Loading...</span>
+<div class="navMenu" id="navMenu">
+
+<div class="navItems">
+
+<button class="navItem chat" id="navChat" aria-label="Chat">
+💬
+</button>
+
+<button class="navItem home" id="navHome" aria-label="Home">
+🏠
+</button>
+
+<button class="navItem competition" id="navCompetition" aria-label="Competitions">
+🏆
+</button>
+
+<button class="navItem games" id="navGames" aria-label="Games">
+🎮
+</button>
+
 </div>
 
-<button class="changeNameButton" id="changeNameButton">
-Change Name
-</button>
+<div class="gamesDropdown" id="gamesDropdown">
+
+<div class="gamesList" id="gamesDropdownList"></div>
+
+</div>
+
+</div>
 
 </div>
 
@@ -58,6 +79,10 @@ Games
 
 <button class="pill pill-blue" id="chatButton">
 Chat
+</button>
+
+<button class="changeNameButton" id="changeNameButton">
+Change Name
 </button>
 
 </main>
@@ -117,7 +142,6 @@ const user=await Security.getUser();
 
 if(!user)return;
 
-document.getElementById("username").textContent=user.username;
 document.getElementById("email").textContent=user.email;
 document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
 
@@ -162,6 +186,96 @@ window.location.href="/home/apps";
 document.getElementById("chatButton").addEventListener("click",()=>{
 
 window.location.href=CONFIG.ROUTES.CHAT;
+
+});
+
+document.getElementById("navChat").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.CHAT;
+
+});
+
+document.getElementById("navHome").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.HOME;
+
+});
+
+document.getElementById("navCompetition").addEventListener("click",()=>{
+
+window.location.href=CONFIG.ROUTES.COMPETITIONS;
+
+});
+
+let gamesLoaded=false;
+const gamesDropdown=document.getElementById("gamesDropdown");
+
+async function ensureGamesLoaded(){
+
+if(gamesLoaded)return;
+
+const result=await Sheets.getGames();
+
+if(!result.success)return;
+
+gamesLoaded=true;
+
+const list=document.getElementById("gamesDropdownList");
+list.innerHTML="";
+
+result.games.forEach(game=>{
+
+const button=document.createElement("button");
+button.className=game.internal?"pill pill-internal":"pill pill-blue";
+button.textContent=game.name;
+
+button.addEventListener("click",(e)=>{
+
+e.stopPropagation();
+
+Sheets.log("GAME_CLICK",game.name);
+
+if(game.internal){
+
+window.location.href="/"+game.url.replace(/^\/+/,"");
+
+}else{
+
+window.open(game.url,"_blank");
+
+}
+
+});
+
+list.appendChild(button);
+
+});
+
+}
+
+document.getElementById("navGames").addEventListener("click",async(e)=>{
+
+e.stopPropagation();
+
+if(!gamesDropdown.classList.contains("open")){
+
+await ensureGamesLoaded();
+
+}
+
+gamesDropdown.classList.toggle("open");
+
+});
+
+gamesDropdown.addEventListener("click",(e)=>{
+
+e.stopPropagation();
+
+});
+
+document.addEventListener("click",()=>{
+
+gamesDropdown.classList.remove("open");
 
 });
 

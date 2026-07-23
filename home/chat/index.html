@@ -31,10 +31,6 @@
 
 <div class="navMenu" id="navMenu">
 
-<button class="menuButton" id="menuButton" aria-label="Menu">
-☰
-</button>
-
 <div class="navItems">
 
 <button class="navItem chat" id="navChat" aria-label="Chat">
@@ -147,7 +143,7 @@ Send
 
 <div class="dmThreadHeader">
 
-<button class="menuButton" id="dmBackButton">←</button>
+<button class="backButton" id="dmBackButton">←</button>
 
 <span id="dmThreadTitle"></span>
 
@@ -448,7 +444,6 @@ const gamesDropdown=document.getElementById("gamesDropdown");
 document.getElementById("navGames").addEventListener("click",async(e)=>{
 
 e.stopPropagation();
-navMenu.classList.remove("open");
 
 if(!gamesDropdown.classList.contains("open")){
 
@@ -493,15 +488,6 @@ setDmView(!inDmView);
 });
 
 const navMenu=document.getElementById("navMenu");
-const menuButton=document.getElementById("menuButton");
-
-menuButton.addEventListener("click",(e)=>{
-
-e.stopPropagation();
-gamesDropdown.classList.remove("open");
-navMenu.classList.toggle("open");
-
-});
 
 const attachMenu=document.getElementById("attachMenu");
 const attachButton=document.getElementById("attachButton");
@@ -515,7 +501,6 @@ attachMenu.classList.toggle("open");
 
 document.addEventListener("click",()=>{
 
-navMenu.classList.remove("open");
 attachMenu.classList.remove("open");
 gamesDropdown.classList.remove("open");
 
@@ -837,6 +822,7 @@ function openDmThread(contact){
 
 openContactId=contact.contactId;
 dmConfirmedCount=0;
+dmInitialLoadPending=true;
 document.getElementById("dmMessages").innerHTML="";
 
 document.getElementById("dmsListView").classList.add("hidden");
@@ -931,12 +917,29 @@ return bubble;
 }
 
 let dmConfirmedCount=0;
+let dmInitialLoadPending=false;
 
 async function loadDmMessages(){
 
 if(!openContactId)return;
 
+const loading=document.getElementById("loading");
+const isInitialLoad=dmInitialLoadPending;
+
+if(isInitialLoad){
+
+loading.classList.remove("hidden");
+
+}
+
 const result=await Sheets.getDmMessages(openContactId);
+
+if(isInitialLoad){
+
+loading.classList.add("hidden");
+dmInitialLoadPending=false;
+
+}
 
 if(!result.success)return;
 

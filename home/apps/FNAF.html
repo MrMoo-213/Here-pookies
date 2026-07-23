@@ -26,10 +26,6 @@ FNAF
 
 <div class="navMenu" id="navMenu">
 
-<button class="menuButton" id="menuButton" aria-label="Menu">
-☰
-</button>
-
 <div class="navItems">
 
 <button class="navItem chat" id="navChat" aria-label="Chat">
@@ -238,7 +234,6 @@ const gamesDropdown=document.getElementById("gamesDropdown");
 document.getElementById("navGames").addEventListener("click",async(e)=>{
 
 e.stopPropagation();
-navMenu.classList.remove("open");
 
 if(!gamesDropdown.classList.contains("open")){
 
@@ -256,20 +251,8 @@ e.stopPropagation();
 
 });
 
-const navMenu=document.getElementById("navMenu");
-const menuButton=document.getElementById("menuButton");
-
-menuButton.addEventListener("click",(e)=>{
-
-e.stopPropagation();
-gamesDropdown.classList.remove("open");
-navMenu.classList.toggle("open");
-
-});
-
 document.addEventListener("click",()=>{
 
-navMenu.classList.remove("open");
 gamesDropdown.classList.remove("open");
 
 });
