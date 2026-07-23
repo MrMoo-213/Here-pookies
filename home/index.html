@@ -111,7 +111,7 @@ Logout
 <h2>Change Name</h2>
 
 <label for="newUsernameInput">New Username:</label>
-<input type="text" id="newUsernameInput" placeholder="3-20 characters">
+<input type="text" id="newUsernameInput" placeholder="">
 
 <button class="button create small" id="submitNameButton">
 Submit
@@ -141,6 +141,8 @@ if(!allowed)return;
 const user=await Security.getUser();
 
 if(!user)return;
+
+document.getElementById("newUsernameInput").placeholder=user.username;
 
 document.getElementById("email").textContent=user.email;
 document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
