@@ -163,23 +163,9 @@ list.appendChild(button);
 
 const gamesDropdown=document.getElementById("gamesDropdown");
 
-document.getElementById("navGames").addEventListener("click",async(e)=>{
+document.getElementById("navGames").addEventListener("click",()=>{
 
-e.stopPropagation();
-
-if(!gamesDropdown.classList.contains("open")){
-
-await ensureGamesLoaded();
-
-}
-
-gamesDropdown.classList.toggle("open");
-
-});
-
-gamesDropdown.addEventListener("click",(e)=>{
-
-e.stopPropagation();
+window.location.href="/home/apps";
 
 });
 
