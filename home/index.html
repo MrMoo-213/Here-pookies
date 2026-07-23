@@ -147,7 +147,7 @@ document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
 
 const changeNameButton=document.getElementById("changeNameButton");
 
-if(user.username==="Username"){
+if(/^User\d+$/.test(user.username)){
 
 changeNameButton.classList.add("attention");
 
