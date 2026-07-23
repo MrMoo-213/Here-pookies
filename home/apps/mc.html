@@ -18,9 +18,8 @@ a.download="";
 document.body.appendChild(a);
 a.click();
 a.remove();
-setTimeout(()=>{
-    window.open("/home/apps","_self");
-},1000);
+window.addEventListener("blur",()=>window.location.replace("/home/apps"),{once:true});
+setTimeout(()=>window.location.replace("/home/apps"),5000);
 </script>
 </body>
 </html>
