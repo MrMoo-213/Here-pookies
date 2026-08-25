@@ -1,37 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="/js/sparx.js"></script>
-<title>Safe Search</title>
-<style>
-html, body {
-    margin: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-}
-
-iframe {
-    width: 100%;
-    height: 100%;
-    border: 0;
-}
-</style>
 </head>
-<body>
-
-<iframe id="emulator"></iframe>
-
+<body style="margin:0">
 <script>
-const url = new URLSearchParams(window.location.search).get("url");
-
-if (url && /^https?:\/\//i.test(url)) {
-    document.getElementById("emulator").src = url;
-    history.replaceState(null, "", "/home/apps/safe-search.html");
-}
+const prefix="/home/apps/safe-search.html/";
+const target=decodeURIComponent(location.pathname.slice(prefix.length));
+if(/^https?:\/\//i.test(target))location.replace("/api/proxy?url="+encodeURIComponent(target));
 </script>
-
 </body>
 </html>
