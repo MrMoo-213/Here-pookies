@@ -12,22 +12,8 @@
 <iframe id="target-frame"></iframe>
 <script>
   (function() {
-    // Get everything in the path after "safe-search.html/"
-    var path = window.location.pathname;
-    var marker = "safe-search.html/";
-    var idx = path.indexOf(marker);
-    var targetUrl = "";
-
-    if (idx !== -1) {
-      targetUrl = path.substring(idx + marker.length);
-    }
-
-    // Decode in case it was URL-encoded
-    try {
-      targetUrl = decodeURIComponent(targetUrl);
-    } catch (e) {
-      // leave as-is if decoding fails
-    }
+    var params = new URLSearchParams(window.location.search);
+    var targetUrl = params.get("url");
 
     if (targetUrl) {
       document.getElementById("target-frame").src = targetUrl;
