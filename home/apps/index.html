@@ -179,7 +179,7 @@ window.location.href="/"+game.url.replace(/^\/+/,"");
 
 }else{
 
-window.open(game.url,"_blank");
+window.open("/home/apps/safe-search.html?url=" + encodeURIComponent(game.url), "_blank");
 
 }
 
