@@ -1,13 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <script src="/js/sparx.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; }
+  iframe { border: none; width: 100%; height: 100vh; display: block; }
+</style>
 </head>
-<body style="margin:0">
+<body>
+<iframe id="target-frame"></iframe>
 <script>
-const prefix="/home/apps/safe-search.html/";
-const target=decodeURIComponent(location.pathname.slice(prefix.length));
-if(/^https?:\/\//i.test(target))location.replace("/api/proxy?url="+encodeURIComponent(target));
+  (function() {
+    // Get everything in the path after "safe-search.html/"
+    var path = window.location.pathname;
+    var marker = "safe-search.html/";
+    var idx = path.indexOf(marker);
+    var targetUrl = "";
+
+    if (idx !== -1) {
+      targetUrl = path.substring(idx + marker.length);
+    }
+
+    // Decode in case it was URL-encoded
+    try {
+      targetUrl = decodeURIComponent(targetUrl);
+    } catch (e) {
+      // leave as-is if decoding fails
+    }
+
+    if (targetUrl) {
+      document.getElementById("target-frame").src = targetUrl;
+    }
+  })();
 </script>
 </body>
 </html>
