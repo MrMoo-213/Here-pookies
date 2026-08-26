@@ -173,9 +173,13 @@ function playGame(game){
 
 Sheets.log("GAME_CLICK",game.name);
 
-if(game.internal){
+if(game.internal===1){
 
 window.location.href="/"+game.url.replace(/^\/+/,"");
+
+}else if(game.internal===2){
+
+window.open("/home/apps/safe-search.html?url=" + encodeURIComponent(game.url), "_blank");
 
 }else{
 
@@ -193,7 +197,7 @@ grid.innerHTML="";
 games.forEach(game=>{
 
 const button=document.createElement("button");
-button.className=game.internal?"pill pill-internal":"pill pill-blue";
+button.className=game.internal===1?"pill pill-internal":"pill pill-blue";
 button.textContent=game.name;
 
 button.addEventListener("click",()=>{
@@ -218,7 +222,7 @@ list.innerHTML="";
 games.forEach(game=>{
 
 const button=document.createElement("button");
-button.className=game.internal?"pill pill-internal":"pill pill-blue";
+button.className=game.internal===1?"pill pill-internal":"pill pill-blue";
 button.textContent=game.name;
 
 button.addEventListener("click",(e)=>{
