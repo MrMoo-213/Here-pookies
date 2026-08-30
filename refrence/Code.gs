@@ -1,0 +1,876 @@
+const SPREADSHEET_ID = "1iB9auDG4m-_ziFl15h_yvJGQ0NQS2oQ9SvcxVX14uf0";
+
+const CLIENT_ID = "324275074378-jtfm32a1podbaeijbc6ncqkqod4gjoge.apps.googleusercontent.com";
+const ALLOWED_DOMAIN = "imberhorne.co.uk";
+
+const SESSION_DURATION_MS = 2.5 * 60 * 60 * 1000;
+
+const SHEET_USERS = "Users";
+const SHEET_LOGS = "Logs";
+const SHEET_REQUESTS = "Account Requests";
+const SHEET_SESSIONS = "Active Sessions";
+const SHEET_GAMES = "Games";
+const SHEET_GAME_REQUESTS = "Game Requests";
+const SHEET_CHAT = "Chat Messages";
+const CHAT_FOLDER_NAME = "Here Pookies Chat Uploads";
+const SHEET_DM_REQUESTS = "DM Requests";
+const SHEET_DM_CONTACTS = "DM Contacts";
+const SHEET_DM_MESSAGES = "DM Messages";
+
+function doPost(e) {
+  let body;
+  try {
+    body = JSON.parse(e.postData.contents);
+  } catch (err) {
+    return jsonOut({ success: false, message: "Bad request." });
+  }
+
+  const action = body.action;
+  const token = body.token;
+
+  try {
+    switch (action) {
+      case "login":
+        return jsonOut(handleLogin(body.idToken));
+      case "validateSession":
+        return jsonOut(handleValidateSession(token));
+      case "getUser":
+        return jsonOut(handleGetUser(token));
+      case "getRole":
+        return jsonOut(handleGetRole(token));
+      case "logout":
+        return jsonOut(handleLogout(token));
+      case "log":
+        return jsonOut(handleLog(token, body.logAction, body.details));
+      case "requestAccount":
+        return jsonOut(handleRequestAccount(body.idToken || body.email, body.name));
+      case "heartbeat":
+        return jsonOut(handleValidateSession(token));
+      case "getGames":
+        return jsonOut(handleGetGames(token));
+      case "loadApps":
+        return jsonOut(handleLoadApps(token));
+      case "requestGame":
+        return jsonOut(handleRequestGame(token, body.name, body.url));
+      case "loadChat":
+        return jsonOut(handleLoadChat(token));
+      case "getMessages":
+        return jsonOut(handleGetMessages(token));
+      case "sendMessage":
+        return jsonOut(handleSendMessage(token, body.message, body.attachmentUrl, body.attachmentType));
+      case "uploadAttachment":
+        return jsonOut(handleUploadAttachment(token, body.filename, body.mimeType, body.base64Data, body.context));
+      case "reactToMessage":
+        return jsonOut(handleReactToMessage(token, body.rowId, body.emoji));
+      case "sendDmRequest":
+        return jsonOut(handleSendDmRequest(token, body.method, body.identifier));
+      case "loadDms":
+        return jsonOut(handleLoadDms(token));
+      case "respondDmRequest":
+        return jsonOut(handleRespondDmRequest(token, body.requestId, body.accept));
+      case "requestShareIdentity":
+        return jsonOut(handleRequestShareIdentity(token, body.contactId));
+      case "getDmMessages":
+        return jsonOut(handleGetDmMessages(token, body.contactId));
+      case "sendDmMessage":
+        return jsonOut(handleSendDmMessage(token, body.contactId, body.message, body.attachmentUrl, body.attachmentType));
+      case "changeUsername":
+        return jsonOut(handleChangeUsername(token, body.newUsername));
+      default:
+        return jsonOut({ success: false, message: "Unknown action." });
+    }
+  } catch (err) {
+    return jsonOut({ success: false, message: "Server error: " + err.message });
+  }
+}
+
+function doGet(e) {
+  return ContentService.createTextOutput("Here-pookies backend is running.");
+}
+
+function handleLogin(idToken) {
+  if (!idToken) return { success: false, message: "Missing token." };
+
+  const claims = verifyGoogleIdToken(idToken);
+  if (!claims) return { success: false, message: "Invalid Google token." };
+
+  const email = claims.email.toLowerCase();
+  if (!email.endsWith("@" + ALLOWED_DOMAIN)) {
+    return { success: false, message: "Wrong Domain", errorCode: "WRONG_DOMAIN" };
+  }
+
+  const user = findUserByEmail(email);
+  if (!user || !user.active) {
+    return { success: false, message: "Your account has not yet been approved." };
+  }
+
+  const session = createSession(email);
+  appendLog(email, "SESSION_CREATED", "New session created", "");
+
+  return { success: true, token: session.token };
+}
+
+function handleValidateSession(token) {
+  if (!token) return { success: false, message: "No session." };
+
+  const session = findSessionByToken(token);
+  if (!session) return { success: false, message: "Session not found." };
+
+  if (Date.now() > session.expires) {
+    deleteSessionRow(session.rowIndex);
+    return { success: false, message: "Session expired." };
+  }
+
+  return { success: true };
+}
+
+function handleGetUser(token) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const user = findUserByEmail(session.email);
+  if (!user) return { success: false, message: "User not found." };
+
+  return {
+    success: true,
+    user: {
+      username: user.username,
+      email: user.email,
+      role: user.role
+    }
+  };
+}
+
+function handleGetRole(token) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const user = findUserByEmail(session.email);
+  if (!user) return { success: false, message: "User not found." };
+
+  return { success: true, role: user.role };
+}
+
+function handleLogout(token) {
+  const session = findSessionByToken(token);
+  if (session) {
+    appendLog(session.email, "LOGOUT", "User logged out", "");
+    deleteSessionRow(session.rowIndex);
+  }
+  return { success: true };
+}
+
+function handleLog(token, logAction, details) {
+  const session = findSessionByToken(token);
+  const email = session ? session.email : "unknown";
+  appendLog(email, logAction || "UNKNOWN", details || "", "");
+  return { success: true };
+}
+
+function handleRequestAccount(idTokenOrEmail, name) {
+  let email = idTokenOrEmail;
+  let displayName = name || "";
+
+  if (idTokenOrEmail && idTokenOrEmail.split(".").length === 3) {
+    const claims = verifyGoogleIdToken(idTokenOrEmail);
+    if (!claims) return { success: false, message: "Invalid Google token." };
+    email = claims.email.toLowerCase();
+    displayName = claims.name || displayName;
+  }
+
+  if (!email) return { success: false, message: "Missing email." };
+  if (!email.toLowerCase().endsWith("@" + ALLOWED_DOMAIN)) {
+    return { success: false, message: "Only @" + ALLOWED_DOMAIN + " accounts may request access.", errorCode: "WRONG_DOMAIN" };
+  }
+
+  const sheet = getSheet(SHEET_REQUESTS);
+  sheet.appendRow([new Date(), email, displayName, "Pending"]);
+  appendLog(email, "ACCOUNT_REQUEST", "Requested account", "");
+
+  return { success: true, message: "Request submitted." };
+}
+
+function handleGetGames(token) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  return { success: true, games: getGamesList() };
+}
+
+function getGamesList() {
+  const sheet = getSheet(SHEET_GAMES);
+  const data = sheet.getDataRange().getValues();
+  const games = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[0]) continue;
+
+    games.push({
+      name: row[0],
+      url: row[1],
+      internal: Number(row[2]) || 0,
+      rating: Number(row[3]) || 0
+    });
+  }
+
+  return games;
+}
+
+function handleLoadApps(token) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const user = findUserByEmail(session.email);
+  if (!user) return { success: false, message: "User not found." };
+
+  return {
+    success: true,
+    user: {
+      username: user.username,
+      email: user.email,
+      role: user.role
+    },
+    games: getGamesList()
+  };
+}
+
+function handleRequestGame(token, name, url) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  if (!name || !url) return { success: false, message: "Missing fields." };
+
+  const session = findSessionByToken(token);
+  const sheet = getSheet(SHEET_GAME_REQUESTS);
+  const data = sheet.getDataRange().getValues();
+  const normalizedUrl = String(url).trim().toLowerCase();
+
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][3]).trim().toLowerCase() === normalizedUrl) {
+      return { success: true };
+    }
+  }
+
+  sheet.appendRow([new Date(), session.email, name, url]);
+  appendLog(session.email, "GAME_REQUEST", name + " - " + url, "");
+
+  return { success: true };
+}
+
+function getMessagesList() {
+  const sheet = getSheet(SHEET_CHAT);
+  const data = sheet.getDataRange().getValues();
+  const messages = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (!row[1]) continue;
+
+    messages.push({
+      rowId: i + 1,
+      timestamp: row[0],
+      email: row[1],
+      username: row[2],
+      role: Number(row[3]),
+      message: row[4],
+      attachmentUrl: row[5],
+      attachmentType: row[6],
+      loveCount: Number(row[7]) || 0,
+      heartCount: Number(row[8]) || 0
+    });
+  }
+
+  return messages;
+}
+
+function handleGetMessages(token) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  return { success: true, messages: getMessagesList() };
+}
+
+function handleLoadChat(token) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const user = findUserByEmail(session.email);
+  if (!user) return { success: false, message: "User not found." };
+
+  return {
+    success: true,
+    user: {
+      username: user.username,
+      email: user.email,
+      role: user.role
+    },
+    messages: getMessagesList()
+  };
+}
+
+function handleSendMessage(token, message, attachmentUrl, attachmentType) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  if (!message && !attachmentUrl) return { success: false, message: "Empty message." };
+
+  const session = findSessionByToken(token);
+  const user = findUserByEmail(session.email);
+  if (!user) return { success: false, message: "User not found." };
+
+  const sheet = getSheet(SHEET_CHAT);
+  sheet.appendRow([
+    new Date(),
+    user.email,
+    user.username,
+    user.role,
+    message || "",
+    attachmentUrl || "",
+    attachmentType || "",
+    0,
+    0
+  ]);
+
+  appendLog(user.email, "CHAT_MESSAGE", message || "(attachment)", "");
+
+  return { success: true };
+}
+
+function handleUploadAttachment(token, filename, mimeType, base64Data, context) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  if (!base64Data) return { success: false, message: "No file provided." };
+
+  if (context === "dm" && mimeType.indexOf("video/") === 0) {
+    return { success: false, message: "Videos aren't allowed in DMs." };
+  }
+
+  try {
+    const bytes = Utilities.base64Decode(base64Data);
+    const blob = Utilities.newBlob(bytes, mimeType, filename);
+
+    const folder = getOrCreateChatFolder();
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+
+    const fileId = file.getId();
+
+    let type = "file";
+    if (mimeType === "image/gif") {
+      type = "gif";
+    } else if (mimeType.indexOf("image/") === 0) {
+      type = "image";
+    } else if (mimeType.indexOf("video/") === 0) {
+      type = "video";
+    }
+
+    const url = type === "video"
+      ? "https://drive.google.com/file/d/" + fileId + "/view"
+      : "https://lh3.googleusercontent.com/d/" + fileId;
+
+    return { success: true, url: url, type: type };
+  } catch (err) {
+    return { success: false, message: "Upload failed: " + err.message };
+  }
+}
+
+function handleReactToMessage(token, rowId, emoji) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  if (!rowId || !emoji) return { success: false, message: "Missing fields." };
+
+  const sheet = getSheet(SHEET_CHAT);
+  const column = emoji === "love" ? 8 : 9;
+  const current = sheet.getRange(rowId, column).getValue();
+  sheet.getRange(rowId, column).setValue((Number(current) || 0) + 1);
+
+  return { success: true };
+}
+
+function getOrCreateChatFolder() {
+  const folders = DriveApp.getFoldersByName(CHAT_FOLDER_NAME);
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder(CHAT_FOLDER_NAME);
+}
+
+function handleSendDmRequest(token, method, identifier) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const fromEmail = session.email;
+
+  if (method === "number") {
+    if (!/^\d{6}$/.test(identifier)) {
+      return { success: false, message: "Enter a 6-digit school number." };
+    }
+
+    const toEmail = identifier + "@" + ALLOWED_DOMAIN;
+    const genericMessage = "If " + identifier + " is registered on Here pookies \uD83D\uDE18\uD83D\uDC95 they will have to accept your DM request for you to see if they are a user or not.";
+
+    if (toEmail.toLowerCase() === fromEmail.toLowerCase()) {
+      return { success: true, message: genericMessage };
+    }
+
+    const targetUser = findUserByEmail(toEmail);
+    if (!targetUser || !targetUser.active) {
+      return { success: true, message: genericMessage };
+    }
+
+    if (dmRelationExists(fromEmail, toEmail)) {
+      return { success: true, message: genericMessage };
+    }
+
+    createDmRequest(fromEmail, toEmail, "number");
+    return { success: true, message: genericMessage };
+  }
+
+  if (method === "username") {
+    const targetUser = findUserByUsername(identifier);
+    if (!targetUser) {
+      return { success: false, message: "No user found with that username." };
+    }
+
+    if (targetUser.email.toLowerCase() === fromEmail.toLowerCase()) {
+      return { success: false, message: "That's your own username." };
+    }
+
+    if (dmRelationExists(fromEmail, targetUser.email)) {
+      return { success: false, message: "You're already connected or have a pending request with this person." };
+    }
+
+    createDmRequest(fromEmail, targetUser.email, "username");
+    return { success: true, message: "Request sent to " + targetUser.username + "." };
+  }
+
+  return { success: false, message: "Invalid method." };
+}
+
+function dmRelationExists(emailA, emailB) {
+  const requests = getSheet(SHEET_DM_REQUESTS).getDataRange().getValues();
+
+  for (let i = 1; i < requests.length; i++) {
+    const row = requests[i];
+    const matches =
+      (row[1].toLowerCase() === emailA.toLowerCase() && row[2].toLowerCase() === emailB.toLowerCase()) ||
+      (row[1].toLowerCase() === emailB.toLowerCase() && row[2].toLowerCase() === emailA.toLowerCase());
+
+    if (matches && row[4] !== "declined") return true;
+  }
+
+  if (dmContactExists(emailA, emailB)) return true;
+
+  return false;
+}
+
+function dmContactExists(emailA, emailB) {
+  const contacts = getSheet(SHEET_DM_CONTACTS).getDataRange().getValues();
+
+  for (let i = 1; i < contacts.length; i++) {
+    const row = contacts[i];
+    if (!row[1] || !row[2]) continue;
+
+    const matches =
+      (row[1].toLowerCase() === emailA.toLowerCase() && row[2].toLowerCase() === emailB.toLowerCase()) ||
+      (row[1].toLowerCase() === emailB.toLowerCase() && row[2].toLowerCase() === emailA.toLowerCase());
+
+    if (matches) return true;
+  }
+
+  return false;
+}
+
+function createDmRequest(fromEmail, toEmail, method) {
+  getSheet(SHEET_DM_REQUESTS).appendRow([new Date(), fromEmail, toEmail, method, "pending"]);
+  appendLog(fromEmail, "DM_REQUEST", "To " + toEmail + " via " + method, "");
+}
+
+function findUserByUsername(username) {
+  const sheet = getSheet(SHEET_USERS);
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (String(row[1]).toLowerCase() === String(username).toLowerCase()) {
+      return {
+        rowIndex: i + 1,
+        email: row[0],
+        username: row[1],
+        role: Number(row[2]),
+        active: row[3] === true || row[3] === "TRUE" || row[3] === 1
+      };
+    }
+  }
+  return null;
+}
+
+function handleLoadDms(token) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const myEmail = session.email;
+
+  const requestsSheet = getSheet(SHEET_DM_REQUESTS);
+  const requestsData = requestsSheet.getDataRange().getValues();
+  const incomingRequests = [];
+
+  for (let i = 1; i < requestsData.length; i++) {
+    const row = requestsData[i];
+    if (row[2].toLowerCase() === myEmail.toLowerCase() && row[4] === "pending") {
+      const fromUser = findUserByEmail(row[1]);
+      incomingRequests.push({
+        requestId: i + 1,
+        method: row[3],
+        display: row[3] === "number" ? row[1].split("@")[0] : (fromUser ? fromUser.username : "Unknown")
+      });
+    }
+  }
+
+  return {
+    success: true,
+    requests: incomingRequests,
+    contacts: getDmContactsList(myEmail)
+  };
+}
+
+function getDmContactsList(myEmail) {
+  const sheet = getSheet(SHEET_DM_CONTACTS);
+  const data = sheet.getDataRange().getValues();
+  const contacts = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    const userA = row[1];
+    const userB = row[2];
+
+    if (!userA || !userB) continue;
+    if (userA.toLowerCase() !== myEmail.toLowerCase() && userB.toLowerCase() !== myEmail.toLowerCase()) continue;
+
+    const iAmA = userA.toLowerCase() === myEmail.toLowerCase();
+    const otherEmail = iAmA ? userB : userA;
+    const method = row[3];
+    const consentA = row[4] === true || row[4] === "TRUE";
+    const consentB = row[5] === true || row[5] === "TRUE";
+    const bothConsented = consentA && consentB;
+    const myConsent = iAmA ? consentA : consentB;
+
+    const otherUser = findUserByEmail(otherEmail);
+    const otherNumber = otherEmail.split("@")[0];
+    const otherUsername = otherUser ? otherUser.username : "Unknown";
+
+    let display = method === "number" ? otherNumber : otherUsername;
+    let revealedExtra = null;
+
+    if (bothConsented) {
+      revealedExtra = method === "number" ? otherUsername : otherNumber;
+    }
+
+    contacts.push({
+      contactId: i + 1,
+      display: display,
+      revealedExtra: revealedExtra,
+      method: method,
+      shareConsented: bothConsented,
+      myConsent: myConsent
+    });
+  }
+
+  return contacts;
+}
+
+function handleRespondDmRequest(token, requestId, accept) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const sheet = getSheet(SHEET_DM_REQUESTS);
+  const row = sheet.getRange(requestId, 1, 1, 5).getValues()[0];
+
+  if (!row[2] || row[2].toLowerCase() !== session.email.toLowerCase()) {
+    return { success: false, message: "Not your request." };
+  }
+
+  if (row[4] === "declined") {
+    return { success: true };
+  }
+
+  if (!accept) {
+
+    if (row[4] === "accepted") {
+      return { success: true };
+    }
+
+    sheet.getRange(requestId, 5).setValue("declined");
+    return { success: true };
+
+  }
+
+  if (row[4] === "accepted") {
+    return { success: true };
+  }
+
+  sheet.getRange(requestId, 5).setValue("accepted");
+
+  if (!dmContactExists(row[1], row[2])) {
+    const contactsSheet = getSheet(SHEET_DM_CONTACTS);
+    contactsSheet.appendRow([new Date(), row[1], row[2], row[3], false, false]);
+  }
+
+  return { success: true };
+}
+
+function handleRequestShareIdentity(token, contactId) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const sheet = getSheet(SHEET_DM_CONTACTS);
+  const row = sheet.getRange(contactId, 1, 1, 6).getValues()[0];
+
+  if (row[1].toLowerCase() === session.email.toLowerCase()) {
+    sheet.getRange(contactId, 5).setValue(true);
+  } else if (row[2].toLowerCase() === session.email.toLowerCase()) {
+    sheet.getRange(contactId, 6).setValue(true);
+  } else {
+    return { success: false, message: "Not your contact." };
+  }
+
+  return { success: true };
+}
+
+function handleGetDmMessages(token, contactId) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const contactsSheet = getSheet(SHEET_DM_CONTACTS);
+  const contactRow = contactsSheet.getRange(contactId, 1, 1, 6).getValues()[0];
+
+  if (contactRow[1].toLowerCase() !== session.email.toLowerCase() && contactRow[2].toLowerCase() !== session.email.toLowerCase()) {
+    return { success: false, message: "Not your contact." };
+  }
+
+  const sheet = getSheet(SHEET_DM_MESSAGES);
+  const data = sheet.getDataRange().getValues();
+  const messages = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (Number(row[1]) !== Number(contactId)) continue;
+
+    messages.push({
+      fromMe: row[2].toLowerCase() === session.email.toLowerCase(),
+      message: row[3],
+      attachmentUrl: row[4],
+      attachmentType: row[5],
+      timestamp: row[0]
+    });
+  }
+
+  return { success: true, messages: messages };
+}
+
+function handleSendDmMessage(token, contactId, message, attachmentUrl, attachmentType) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  if (!message && !attachmentUrl) return { success: false, message: "Empty message." };
+  if (attachmentType === "video") return { success: false, message: "Videos aren't allowed in DMs." };
+
+  const session = findSessionByToken(token);
+  const contactsSheet = getSheet(SHEET_DM_CONTACTS);
+  const contactRow = contactsSheet.getRange(contactId, 1, 1, 6).getValues()[0];
+
+  if (contactRow[1].toLowerCase() !== session.email.toLowerCase() && contactRow[2].toLowerCase() !== session.email.toLowerCase()) {
+    return { success: false, message: "Not your contact." };
+  }
+
+  getSheet(SHEET_DM_MESSAGES).appendRow([
+    new Date(),
+    contactId,
+    session.email,
+    message || "",
+    attachmentUrl || "",
+    attachmentType || ""
+  ]);
+
+  return { success: true };
+}
+
+function handleChangeUsername(token, newUsername) {
+  const validation = handleValidateSession(token);
+  if (!validation.success) return validation;
+
+  const session = findSessionByToken(token);
+  const user = findUserByEmail(session.email);
+  if (!user) return { success: false, message: "User not found." };
+
+  const trimmed = String(newUsername || "").trim();
+
+  if (trimmed.length < 3 || trimmed.length > 20) {
+    return { success: false, message: "Username must be 3-20 characters." };
+  }
+
+  if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
+    return { success: false, message: "Letters, numbers, and underscores only." };
+  }
+
+  const existing = findUserByUsername(trimmed);
+  if (existing && existing.email.toLowerCase() !== user.email.toLowerCase()) {
+    return { success: false, message: "That username is taken." };
+  }
+
+  getSheet(SHEET_USERS).getRange(user.rowIndex, 2).setValue(trimmed);
+  appendLog(user.email, "USERNAME_CHANGED", trimmed, "");
+
+  return { success: true, username: trimmed };
+}
+
+function verifyGoogleIdToken(idToken) {
+  const url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + encodeURIComponent(idToken);
+  const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+
+  if (response.getResponseCode() !== 200) return null;
+
+  const claims = JSON.parse(response.getContentText());
+
+  if (claims.aud !== CLIENT_ID) return null;
+  if (claims.email_verified !== "true" && claims.email_verified !== true) return null;
+  if (!claims.email) return null;
+
+  return claims;
+}
+
+function getSpreadsheet() {
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
+function getSheet(name) {
+  const sheet = getSpreadsheet().getSheetByName(name);
+  if (!sheet) throw new Error("Missing sheet: " + name);
+  return sheet;
+}
+
+function findUserByEmail(email) {
+  const sheet = getSheet(SHEET_USERS);
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (String(row[0]).toLowerCase() === email.toLowerCase()) {
+      return {
+        rowIndex: i + 1,
+        email: row[0],
+        username: row[1],
+        role: Number(row[2]),
+        active: row[3] === true || row[3] === "TRUE" || row[3] === 1
+      };
+    }
+  }
+  return null;
+}
+
+function findSessionByToken(token) {
+  if (!token) return null;
+
+  const sheet = getSheet(SHEET_SESSIONS);
+  const data = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < data.length; i++) {
+    const row = data[i];
+    if (row[0] === token) {
+      return {
+        rowIndex: i + 1,
+        token: row[0],
+        email: row[1],
+        expires: new Date(row[3]).getTime()
+      };
+    }
+  }
+  return null;
+}
+
+function createSession(email) {
+  const sheet = getSheet(SHEET_SESSIONS);
+  const token = generateToken();
+  const created = new Date();
+  const expires = new Date(created.getTime() + SESSION_DURATION_MS);
+
+  sheet.appendRow([token, email, created, expires, ""]);
+
+  return { token: token, expires: expires };
+}
+
+function deleteSessionRow(rowIndex) {
+  getSheet(SHEET_SESSIONS).deleteRow(rowIndex);
+}
+
+function appendLog(email, action, details, ip) {
+  getSheet(SHEET_LOGS).appendRow([new Date(), email, action, details, ip || ""]);
+}
+
+function generateToken() {
+  return Utilities.getUuid() + Utilities.getUuid().replace(/-/g, "");
+}
+
+function expireOldSessions() {
+  const sheet = getSheet(SHEET_SESSIONS);
+  const data = sheet.getDataRange().getValues();
+  const now = Date.now();
+
+  for (let i = data.length - 1; i >= 1; i--) {
+    const expires = new Date(data[i][3]).getTime();
+    if (now > expires) {
+      sheet.deleteRow(i + 1);
+    }
+  }
+}
+
+function setupSheets() {
+  const ss = getSpreadsheet();
+
+  createSheetIfMissing(ss, SHEET_USERS, ["Email", "Username", "Role", "Active"]);
+  createSheetIfMissing(ss, SHEET_LOGS, ["Timestamp", "Email", "Action", "Details", "IP"]);
+  createSheetIfMissing(ss, SHEET_REQUESTS, ["Timestamp", "Email", "Name", "Status"]);
+  createSheetIfMissing(ss, SHEET_SESSIONS, ["Token", "Email", "Created", "Expires", "IP"]);
+  createSheetIfMissing(ss, SHEET_GAME_REQUESTS, ["Timestamp", "Email", "Name", "URL"]);
+  createSheetIfMissing(ss, SHEET_GAMES, ["Name", "URL", "Internal", "Rating"]);
+  createSheetIfMissing(ss, SHEET_CHAT, ["Timestamp", "Email", "Username", "Role", "Message", "AttachmentURL", "AttachmentType", "LoveCount", "HeartCount"]);
+  createSheetIfMissing(ss, SHEET_DM_REQUESTS, ["Timestamp", "FromEmail", "ToEmail", "Method", "Status"]);
+  createSheetIfMissing(ss, SHEET_DM_CONTACTS, ["Timestamp", "UserA", "UserB", "Method", "ShareConsentA", "ShareConsentB"]);
+  createSheetIfMissing(ss, SHEET_DM_MESSAGES, ["Timestamp", "ContactId", "FromEmail", "Message", "AttachmentURL", "AttachmentType"]);
+
+  seedDefaultGames(ss);
+}
+
+function seedDefaultGames(ss) {
+  const sheet = ss.getSheetByName(SHEET_GAMES);
+  if (sheet.getLastRow() > 1) return;
+
+  sheet.appendRow(["Geometry Dash", "home/apps/geometry-dash", 1, 0]);
+  sheet.appendRow(["Merge Fellas", "home/apps/merge-fellas", 1, 0]);
+  sheet.appendRow(["Merge Fruits", "home/apps/merge-fruits", 1, 0]);
+}
+
+function createSheetIfMissing(ss, name, headers) {
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+  }
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow(headers);
+    sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
+  }
+}
+
+function jsonOut(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
