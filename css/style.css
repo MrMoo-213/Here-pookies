@@ -125,6 +125,8 @@ background:#31c956;
   font-size: 16px;
   margin: 4px 2px;
   cursor: pointer;
+  font-size:18px;
+  font-weight:600;
 }
 
 #googleButton{
