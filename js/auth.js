@@ -1,25 +1,16 @@
 class Auth{
-
 static initialise(){
-
 if(typeof google==="undefined"||!google.accounts){
-
 setTimeout(()=>Auth.initialise(),50);
 return;
-
-}
-
-google.accounts.id.initialize({
+}google.accounts.id.initialize({
 client_id:CONFIG.CLIENT_ID,
 callback:this.googleCallback.bind(this),
 auto_select:false,
 cancel_on_tap_outside:true
 });
-
 const button=document.getElementById("googleButton");
-
 if(button){
-
 google.accounts.id.renderButton(button,{
 type:"standard",
 theme:"outline",
@@ -28,128 +19,57 @@ shape:"pill",
 text:"signin_with",
 width:320,
 logo_alignment:"left"
-});
-
-}
-
-}
-
+});}}
 static async googleCallback(response){
-
 const loading=document.getElementById("loading");
-
 if(loading){
 loading.classList.remove("hidden");
-}
-
-try{
-
+}try{
 const result=await Sheets.login(response.credential);
-
 if(!result.success){
-
 if(loading){
 loading.classList.add("hidden");
-}
-
-this.showError(result.message||CONFIG.ERRORS.ACCOUNT_NOT_FOUND);
-
+}this.showError(result.message||CONFIG.ERRORS.ACCOUNT_NOT_FOUND);
 return;
-
-}
-
-SessionManager.createSession(result.token);
-
+}SessionManager.createSession(result.token);
 await Logger.login();
-
 window.location.replace(CONFIG.ROUTES.HOME);
-
 }catch{
-
 if(loading){
 loading.classList.add("hidden");
-}
-
-this.showError("Unable to sign in.");
-
-}
-
-}
-
-static async autoLogin(){
-
+}this.showError("Unable to sign in.");
+}}static async autoLogin(){
 if(!SessionManager.hasSession())return;
-
 const valid=await SessionManager.validate();
-
 if(valid){
-
 window.location.replace(CONFIG.ROUTES.HOME);
-
 }else{
-
 SessionManager.destroy();
-
-}
-
-}
-
-static async logout(){
-
+}}static async logout(){
 const loading=document.getElementById("loading");
-
 if(loading){
 loading.classList.remove("hidden");
-}
-
-try{
-
+}try{
 await Sheets.logout();
-
 }catch{}
-
 await Logger.logout();
-
 SessionManager.destroy();
-
 if(typeof google!=="undefined"&&google.accounts){
 google.accounts.id.disableAutoSelect();
-}
-
-window.location.replace(CONFIG.ROUTES.LOGIN);
-
-}
-
-static showError(message){
-
+}window.location.replace(CONFIG.ROUTES.LOGIN);
+}static showError(message){
 const box=document.getElementById("error");
-
 if(!box){
-
 alert(message);
-
 return;
-
-}
-
-box.textContent=message;
-
+}box.textContent=message;
 box.classList.add("show");
-
 setTimeout(()=>{
-
 box.classList.remove("show");
-
 },4000);
-
-}
-
-static hideError(){
-
+}static hideError(){
 const box=document.getElementById("error");
-
 if(!box)return;
-
 box.classList.remove("show");
 
 }
