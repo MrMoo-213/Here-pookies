@@ -114,15 +114,6 @@ color:#fff;
 background:#31c956;
 }
 
-.admin{
-background:#2869b4;
-color:#fff;
-}
-
-.admin:hover{
-background:#134884;
-}
-
 #googleButton{
 width:320px;
 display:flex;
