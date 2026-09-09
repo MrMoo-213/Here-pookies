@@ -179,13 +179,25 @@ window.location.href=CONFIG.ROUTES.COMPETITIONS;
 
 });
 
+function pillClass(game){
+
+if(game.internal===1)return "pill pill-internal";
+if(game.internal===2)return "pill pill-safe";
+return "pill pill-blue";
+
+}
+
 function playGame(game){
 
 Sheets.log("GAME_CLICK",game.name);
 
-if(game.internal){
+if(game.internal===1){
 
 window.location.href="/"+game.url.replace(/^\/+/,"");
+
+}else if(game.internal===2){
+
+window.open("/home/apps/safe-search.html?url=" + encodeURIComponent(game.url), "_blank");
 
 }else{
 
@@ -213,7 +225,7 @@ list.innerHTML="";
 result.games.forEach(game=>{
 
 const button=document.createElement("button");
-button.className=game.internal?"pill pill-internal":"pill pill-blue";
+button.className=pillClass(game);
 button.textContent=game.name;
 
 button.addEventListener("click",(e)=>{
