@@ -238,16 +238,47 @@ list.appendChild(button);
 
 }
 
-window.addEventListener("load",async()=>{
+function isRealAuthFailure(message){
 
-const loading=document.getElementById("loading");
+const authMessages=["No session.","Session not found.","Session expired."];
+
+return authMessages.includes(message);
+
+}
+
+async function loadAppsWithRetry(loading){
 
 const result=await Sheets.loadApps();
 
 if(!result.success){
 
+if(isRealAuthFailure(result.message)){
+
 SessionManager.destroy();
 window.location.replace(CONFIG.ROUTES.LOGIN);
+return;
+
+}
+
+loading.classList.add("hidden");
+showToast(result.message||"Couldn't load games, tap to retry.");
+
+const grid=document.getElementById("appsGrid");
+grid.innerHTML="";
+
+const retryButton=document.createElement("button");
+retryButton.className="pill pill-blue";
+retryButton.textContent="Retry";
+
+retryButton.addEventListener("click",()=>{
+
+loading.classList.remove("hidden");
+loadAppsWithRetry(loading);
+
+});
+
+grid.appendChild(retryButton);
+
 return;
 
 }
@@ -264,6 +295,14 @@ SessionManager.startWatcher();
 Logger.page(window.location.pathname);
 
 loading.classList.add("hidden");
+
+}
+
+window.addEventListener("load",async()=>{
+
+const loading=document.getElementById("loading");
+
+await loadAppsWithRetry(loading);
 
 });
 
