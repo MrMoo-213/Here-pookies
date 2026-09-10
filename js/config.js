@@ -1,6 +1,6 @@
 const CONFIG = Object.freeze({
 CLIENT_ID: "324275074378-jtfm32a1podbaeijbc6ncqkqod4gjoge.apps.googleusercontent.com",
-APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbxtDR7ro_SZRMPnPRMVGYjwvkraCg8IFXpSip5F8L9Tv86cyoYszrTvfE-fhBWz5Fy7/exec",
+APPS_SCRIPT_URL: "https://script.google.com/macros/s/AKfycbzCpZXSVlbgv_6-pw8OZ09C-_NP1zbfEpGdeL-sGcp1h6O7Zy96yXQgr9Ifmo3SPs4E/exec",
 ALLOWED_DOMAIN: "imberhorne.co.uk",
 ROUTES: Object.freeze({
 LOGIN: "/",
