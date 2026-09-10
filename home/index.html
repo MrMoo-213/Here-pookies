@@ -6,8 +6,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 
 <title>Home</title>
+
 <script src="/js/sparx.js"></script>
 <script src="/js/header.js"></script>
+
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
 <link rel="stylesheet" href="/css/home.css">
@@ -16,12 +18,17 @@
 <body>
 
 <div class="loading hidden" id="loading">
+
 <div class="spinner"></div>
+
 </div>
 
 <div class="toast" id="toast">
+
 <span class="tick">✓</span>
+
 <span id="toastText">Name updated</span>
+
 </div>
 
 <div class="dashboard">
@@ -59,6 +66,7 @@ Change Name
 <h2>Account</h2>
 
 <p><strong>Email:</strong> <span id="email">Loading...</span></p>
+
 <p><strong>Role:</strong> <span id="role">Loading...</span></p>
 
 <button class="button guest" id="logoutButton">
@@ -72,6 +80,7 @@ Logout
 <h2>Change Name</h2>
 
 <label for="newUsernameInput">New Username:</label>
+
 <input type="text" id="newUsernameInput" placeholder="">
 
 <button class="button create small" id="submitNameButton">
@@ -91,42 +100,81 @@ Submit
 
 <script>
 
-window.addEventListener("load",async()=>{
+const gearButton=document.getElementById("gearButton");
 
-const loading=document.getElementById("loading");
+const settingsPanel=document.getElementById("settingsPanel");
 
-const allowed=await Security.protect();
+const changeNamePanel=document.getElementById("changeNamePanel");
 
-if(!allowed)return;
+const settingsOverlay=document.getElementById("settingsOverlay");
 
-const user=await Security.getUser();
+function closeAllPanels(){
 
-if(!user)return;
+settingsPanel.classList.add("hidden");
 
-document.getElementById("newUsernameInput").placeholder=user.username;
+changeNamePanel.classList.add("hidden");
 
-document.getElementById("email").textContent=user.email;
-document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
-
-const changeNameButton=document.getElementById("changeNameButton");
-
-if(/^User\d+$/.test(user.username)){
-
-changeNameButton.classList.add("attention");
+settingsOverlay.classList.add("hidden");
 
 }
 
-loading.classList.add("hidden");
+function openSettings(){
 
-const dmResult=await Sheets.loadDms();
+if(!settingsPanel.classList.contains("hidden")){
 
-if(dmResult.success&&dmResult.requests&&dmResult.requests.length>0){
+closeAllPanels();
 
-showToast("You have a pending DM request!");
+return;
 
 }
 
-});
+closeAllPanels();
+
+settingsPanel.classList.remove("hidden");
+
+settingsOverlay.classList.remove("hidden");
+
+}
+
+function openChangeName(){
+
+if(!changeNamePanel.classList.contains("hidden")){
+
+closeAllPanels();
+
+return;
+
+}
+
+closeAllPanels();
+
+changeNamePanel.classList.remove("hidden");
+
+settingsOverlay.classList.remove("hidden");
+
+}
+
+gearButton.addEventListener("click",openSettings);
+
+document.getElementById("changeNameButton").addEventListener("click",openChangeName);
+
+settingsOverlay.addEventListener("click",closeAllPanels);
+
+function showToast(message){
+
+const toast=document.getElementById("toast");
+
+document.getElementById("toastText").textContent=message;
+
+toast.classList.add("show");
+
+setTimeout(()=>{
+
+toast.classList.remove("show");
+
+},3000);
+
+}
 
 document.getElementById("logoutButton").addEventListener("click",()=>{
 
@@ -152,164 +200,16 @@ window.location.href=CONFIG.ROUTES.CHAT;
 
 });
 
-document.getElementById("navChat").addEventListener("click",()=>{
-
-window.location.href=CONFIG.ROUTES.CHAT;
-
-});
-
-document.getElementById("navHome").addEventListener("click",()=>{
-
-window.location.href=CONFIG.ROUTES.HOME;
-
-});
-
-document.getElementById("navCompetition").addEventListener("click",()=>{
-
-window.location.href=CONFIG.ROUTES.COMPETITIONS;
-
-});
-
-let gamesLoaded=false;
-const gamesDropdown=document.getElementById("gamesDropdown");
-
-function pillClass(game){
-
-if(game.internal===1)return "pill pill-internal";
-if(game.internal===2)return "pill pill-safe";
-return "pill pill-blue";
-
-}
-
-async function ensureGamesLoaded(){
-
-if(gamesLoaded)return;
-
-const result=await Sheets.getGames();
-
-if(!result.success)return;
-
-gamesLoaded=true;
-
-const list=document.getElementById("gamesDropdownList");
-list.innerHTML="";
-
-result.games.forEach(game=>{
-
-const button=document.createElement("button");
-button.className=pillClass(game);
-button.textContent=game.name;
-
-button.addEventListener("click",(e)=>{
-
-e.stopPropagation();
-
-Sheets.log("GAME_CLICK",game.name);
-
-if(game.internal===1){
-
-window.location.href="/"+game.url.replace(/^\/+/,"");
-
-}else if(game.internal===2){
-
-window.open("/home/apps/safe-search.html?url=" + encodeURIComponent(game.url), "_blank");
-
-}else{
-
-window.open(game.url,"_blank");
-
-}
-
-});
-
-list.appendChild(button);
-
-});
-
-}
-
-document.getElementById("navGames").addEventListener("click",()=>{
-
-window.location.href="/home/apps";
-
-});
-
-document.addEventListener("click",()=>{
-
-gamesDropdown.classList.remove("open");
-
-});
-
-const gearButton=document.getElementById("gearButton");
-const settingsPanel=document.getElementById("settingsPanel");
-const changeNamePanel=document.getElementById("changeNamePanel");
-const settingsOverlay=document.getElementById("settingsOverlay");
-
-function closeAllPanels(){
-
-settingsPanel.classList.add("hidden");
-changeNamePanel.classList.add("hidden");
-settingsOverlay.classList.add("hidden");
-
-}
-
-function openSettings(){
-
-if(!settingsPanel.classList.contains("hidden")){
-
-closeAllPanels();
-return;
-
-}
-
-closeAllPanels();
-settingsPanel.classList.remove("hidden");
-settingsOverlay.classList.remove("hidden");
-
-}
-
-function openChangeName(){
-
-if(!changeNamePanel.classList.contains("hidden")){
-
-closeAllPanels();
-return;
-
-}
-
-closeAllPanels();
-changeNamePanel.classList.remove("hidden");
-settingsOverlay.classList.remove("hidden");
-
-}
-
-gearButton.addEventListener("click",openSettings);
-document.getElementById("changeNameButton").addEventListener("click",openChangeName);
-settingsOverlay.addEventListener("click",closeAllPanels);
-
-function showToast(message){
-
-const toast=document.getElementById("toast");
-document.getElementById("toastText").textContent=message;
-
-toast.classList.add("show");
-
-setTimeout(()=>{
-
-toast.classList.remove("show");
-
-},3000);
-
-}
-
 document.getElementById("submitNameButton").addEventListener("click",async()=>{
 
 const input=document.getElementById("newUsernameInput");
+
 const newUsername=input.value.trim();
 
 if(!newUsername)return;
 
 const loading=document.getElementById("loading");
+
 loading.classList.remove("hidden");
 
 const result=await Sheets.changeUsername(newUsername);
@@ -319,17 +219,56 @@ loading.classList.add("hidden");
 if(!result.success){
 
 showToast(result.message||"Couldn't update name.");
+
 return;
 
 }
 
-document.getElementById("username").textContent=result.username;
 document.getElementById("changeNameButton").classList.remove("attention");
+
 input.value="";
 
 closeAllPanels();
 
 showToast("Name updated");
+
+});
+
+window.addEventListener("load",async()=>{
+
+const loading=document.getElementById("loading");
+
+const allowed=await Security.protect();
+
+if(!allowed)return;
+
+const user=await Security.getUser();
+
+if(!user)return;
+
+document.getElementById("newUsernameInput").placeholder=user.username;
+
+document.getElementById("email").textContent=user.email;
+
+document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
+
+const changeNameButton=document.getElementById("changeNameButton");
+
+if(/^User\d+$/.test(user.username)){
+
+changeNameButton.classList.add("attention");
+
+}
+
+loading.classList.add("hidden");
+
+const dmResult=await Sheets.loadDms();
+
+if(dmResult.success&&dmResult.requests&&dmResult.requests.length>0){
+
+showToast("You have a pending DM request!");
+
+}
 
 });
 
