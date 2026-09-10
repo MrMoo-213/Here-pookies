@@ -42,6 +42,8 @@ Games
 Chat
 </button>
 
+<p><strong>Username:</strong> <span id="username">Loading...</span></p>
+
 <button class="changeNameButton" id="changeNameButton">
 Change Name
 </button>
@@ -104,6 +106,7 @@ const user=await Security.getUser();
 if(!user)return;
 
 document.getElementById("newUsernameInput").placeholder=user.username;
+document.getElementById("username").textContent=user.username;
 
 document.getElementById("email").textContent=user.email;
 document.getElementById("role").textContent=CONFIG.ROLE_NAMES[user.role];
