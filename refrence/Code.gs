@@ -96,7 +96,7 @@ function handleLogin(idToken) {
 
   const email = claims.email.toLowerCase();
   if (!email.endsWith("@" + ALLOWED_DOMAIN)) {
-    return { success: false, message: "Wrong Domain", errorCode: "WRONG_DOMAIN" };
+    return { success: false, message: "Only @" + ALLOWED_DOMAIN + " accounts may sign in.", errorCode: "WRONG_DOMAIN" };
   }
 
   const user = findUserByEmail(email);
@@ -115,11 +115,6 @@ function handleValidateSession(token) {
 
   const session = findSessionByToken(token);
   if (!session) return { success: false, message: "Session not found." };
-
-  if (Date.now() > session.expires) {
-    deleteSessionRow(session.rowIndex);
-    return { success: false, message: "Session expired." };
-  }
 
   return { success: true };
 }
