@@ -1,0 +1,45 @@
+<html lang="en"><head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<script src="/js/sparx.js"></script>
+<link rel="stylesheet" href="/css/animations.css">
+<link rel="stylesheet" href="/css/style.css">
+
+<link rel="icon" type="image/png" href="/assets/favicon.png"></head>
+<body>
+
+<div class="page">
+
+<div class="card">
+
+<h1 class="logo float">
+Coming Soon...
+</h1>
+
+<button class="blackBackgroundButton" id="homeButton">
+Go Home
+</button>
+
+</div>
+
+</div>
+
+<script src="/js/config.js"></script>
+<script src="/js/session.js"></script>
+
+<script>
+
+document.getElementById("homeButton").addEventListener("click",()=>{
+
+const hasSession=SessionManager.hasSession();
+
+window.location.href=hasSession?CONFIG.ROUTES.HOME:CONFIG.ROUTES.LOGIN;
+
+});
+
+</script>
+
+
+
+</body></html>
