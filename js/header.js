@@ -14,11 +14,6 @@ Here pookies 😘💕
 
 <div class="userArea">
 
-<div class="welcome">
-Welcome,
-<span id="username">Loading...</span>
-</div>
-
 <div class="navMenu" id="navMenu">
 
 <div class="navItems">
