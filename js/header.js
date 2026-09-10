@@ -4,12 +4,32 @@ const header=document.getElementById("header");
 
 if(!header)return;
 
+const path=window.location.pathname.replace(/\/+$/,"");
+
+let title="Here pookies 😘💕";
+let showDMs=false;
+
+if(path==="/home/index.html"){
+title="Here pookies 😘💕";
+}else if(path==="/home/apps/index.html"){
+title="Games";
+}else if(path==="/home/apps/FNAF.html"){
+title="FNAF";
+}else if(path==="/home/chat/index.html"){
+title="Chat";
+showDMs=true;
+}
+
 header.innerHTML=`
 
 <header class="topbar">
 
 <div class="title">
-Here pookies 😘💕
+
+<span id="viewTitle">${title}</span>
+
+${showDMs?`<button class="dmToggleButton" id="dmToggleButton">DMs</button>`:""}
+
 </div>
 
 <div class="userArea">
@@ -51,21 +71,15 @@ Here pookies 😘💕
 `;
 
 document.getElementById("navChat").addEventListener("click",()=>{
-
 window.location.href=CONFIG.ROUTES.CHAT;
-
 });
 
 document.getElementById("navHome").addEventListener("click",()=>{
-
 window.location.href=CONFIG.ROUTES.HOME;
-
 });
 
 document.getElementById("navCompetition").addEventListener("click",()=>{
-
 window.location.href=CONFIG.ROUTES.COMPETITIONS;
-
 });
 
 let gamesLoaded=false;
@@ -133,15 +147,11 @@ list.appendChild(button);
 }
 
 document.getElementById("navGames").addEventListener("click",()=>{
-
 window.location.href="/home/apps";
-
 });
 
 document.addEventListener("click",()=>{
-
 gamesDropdown.classList.remove("open");
-
 });
 
 });
