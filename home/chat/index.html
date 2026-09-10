@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <script src="/js/sparx.js"></script>
-<script src="/js/header.js"></script>
+<title>Chat</title>
 
 <link rel="stylesheet" href="/css/animations.css">
 <link rel="stylesheet" href="/css/style.css">
@@ -20,7 +20,40 @@
 
 <div class="dashboard">
 
-<div id="header"></div>
+<header class="topbar">
+
+<div class="title">
+<span id="viewTitle">Chat</span>
+<button class="dmToggleButton" id="dmToggleButton">DMs</button>
+</div>
+
+<div class="userArea">
+
+<div class="navMenu" id="navMenu">
+
+<div class="navItems">
+
+<button class="navItem home" id="navHome" aria-label="Home">
+🏠
+</button>
+
+<button class="navItem games" id="navGames" aria-label="Games">
+🎮
+</button>
+
+</div>
+
+<div class="gamesDropdown" id="gamesDropdown">
+
+<div class="gamesList" id="gamesDropdownList"></div>
+
+</div>
+
+</div>
+
+</div>
+
+</header>
 
 <div class="chatArea" id="gcView">
 
