@@ -2,13 +2,9 @@ document.addEventListener("DOMContentLoaded",()=>{
 const header=document.getElementById("header");
 if(!header)return;
 
-const path=window.location.pathname;
+
 
 let title="Here pookies 😘💕";
-
-if(path.startsWith("/home/apps"))title="Games";
-else if(path.startsWith("/home/chat"))title="Chat";
-else if(path.startsWith("/home/competitions"))title="Competitions";
 
 header.innerHTML=`
 <header class="topbar">
